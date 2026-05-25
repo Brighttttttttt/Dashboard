@@ -62,6 +62,16 @@ Dynamics, etc.) sont ignorés sans erreur grâce à l'option `force: true` du pa
 Développeur système embarqué, pas de background web.
 Expliquer simplement, ne pas noyer dans les détails techniques web.
 
+## Git workflow
+
+- `main` : production — merge uniquement depuis `dev` (CI + 1 review obligatoires)
+- `dev` : branche principale de développement
+- `feat/<nom>` : nouvelle feature → branche depuis `dev`, PR vers `dev`
+- `fix/<nom>` : correction de bug → branche depuis `dev`, PR vers `dev`
+
+CI (type check + build) obligatoire sur toutes les PRs.
+Auto-merge (rebase) activé : merge automatique dès que les conditions sont remplies, branche supprimée après merge.
+
 ## Fichiers importants
 
 - `samples/` → fichiers FIT de test, non commités (dans .gitignore)
