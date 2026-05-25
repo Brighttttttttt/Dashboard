@@ -3,9 +3,12 @@ name: Auto-merge
 on:
   pull_request:
     types: [opened, reopened, synchronize]
+  pull_request_target:
+    types: [closed]
 
 jobs:
   enable-automerge:
+    if: github.event_name == 'pull_request' && github.event.action != 'closed'
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
@@ -20,3 +23,21 @@ jobs:
             --rebase \
             --delete-branch \
             --repo ${{ github.repository }}
+
+  close-linked-issues:
+    if: github.event_name == 'pull_request_target' && github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Close linked issues
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          issues=$(gh pr view $PR_NUMBER --repo $REPO --json closingIssuesReferences --jq '.closingIssuesReferences[].number')
+          for issue in $issues; do
+            gh issue close $issue --repo $REPO --comment "Fermée automatiquement — PR #$PR_NUMBER mergée."
+            echo "Issue #$issue fermée."
+          done
