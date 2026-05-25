@@ -64,13 +64,38 @@ Expliquer simplement, ne pas noyer dans les détails techniques web.
 
 ## Git workflow
 
+### Branches
 - `main` : production — merge uniquement depuis `dev` (CI + 1 review obligatoires)
 - `dev` : branche principale de développement
 - `feat/<nom>` : nouvelle feature → branche depuis `dev`, PR vers `dev`
 - `fix/<nom>` : correction de bug → branche depuis `dev`, PR vers `dev`
 
-CI (type check + build) obligatoire sur toutes les PRs.
-Auto-merge (rebase) activé : merge automatique dès que les conditions sont remplies, branche supprimée après merge.
+### Ordre à respecter impérativement
+
+1. **Créer une issue GitHub** décrivant la feature ou le bug en langage naturel (français).
+   L'utilisateur valide l'issue avant que le développement commence.
+
+2. **Créer la branche** depuis `dev` :
+   ```bash
+   git checkout dev && git pull origin dev
+   git checkout -b feat/<nom>
+   ```
+
+3. **Faire tous les changements** en plusieurs commits thématiques sur la branche.
+   Ne pas créer la PR tant que tout n'est pas terminé.
+
+4. **Créer la PR** en une seule fois, une fois tous les commits faits, en la liant à l'issue (`Closes #<n>`).
+
+### Pourquoi créer la PR uniquement à la fin
+
+L'auto-merge est activé : dès que la CI passe, GitHub rebase, merge et **supprime la branche automatiquement**.
+Pousser un commit supplémentaire sur une PR ouverte peut déclencher le merge avant que tous les changements soient là.
+**Ne jamais ouvrir la PR avant d'avoir fini.**
+
+### CI / auto-merge
+- CI (type check + build) obligatoire sur toutes les PRs
+- Merge automatique en rebase dès que les conditions sont remplies
+- Branche supprimée automatiquement après merge
 
 ## Fichiers importants
 
