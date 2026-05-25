@@ -10,15 +10,17 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       issues: write
+      pull-requests: read
     steps:
       - name: Close linked issues
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_BODY: ${{ github.event.pull_request.body }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-          REPO: ${{ github.repository }}
         run: |
-          issues=$(gh pr view $PR_NUMBER --repo $REPO --json closingIssuesReferences --jq '.closingIssuesReferences[].number')
+          issues=$(echo "$PR_BODY" | grep -oP '(?i)(?:closes?|fixes?|resolves?)\s+#\K[0-9]+')
           for issue in $issues; do
-            gh issue close $issue --repo $REPO --comment "Fermée automatiquement — PR #$PR_NUMBER mergée."
+            gh issue close $issue --repo ${{ github.repository }} \
+              --comment "Fermée automatiquement — PR #$PR_NUMBER mergée."
             echo "Issue #$issue fermée."
           done
