@@ -11,7 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       issues: write
-      pull-requests: read
+      pull-requests: write
+      contents: write
 
     steps:
       - uses: actions/checkout@v4
@@ -36,7 +37,7 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Close linked issues
+      - name: Merge PR + close linked issues
         if: github.event_name == 'pull_request'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -44,6 +45,7 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           REPO: ${{ github.repository }}
         run: |
+          gh pr merge "$PR_NUMBER" --rebase --delete-branch --repo "$REPO"
           issues=$(echo "$PR_BODY" | grep -oP '(?i)(?:closes?|fixes?|resolves?)\s+#\K[0-9]+' || true)
           for issue in $issues; do
             gh issue close "$issue" --repo "$REPO" --comment "Fermée automatiquement — PR #$PR_NUMBER mergée." 2>/dev/null || true
