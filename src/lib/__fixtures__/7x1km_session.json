@@ -1,0 +1,163 @@
+{
+  "laps": [
+    {
+      "avg_speed": 10.0,
+      "total_distance": 1.00,
+      "total_timer_time": 360,
+      "total_elapsed_time": 362,
+      "avg_heart_rate": 135,
+      "max_heart_rate": 152,
+      "avg_cadence": 87,
+      "start_time": "2026-05-21T06:00:00.000Z"
+    },
+    {
+      "avg_speed": 17.48,
+      "total_distance": 1.00,
+      "total_timer_time": 206,
+      "total_elapsed_time": 207,
+      "avg_heart_rate": 168,
+      "max_heart_rate": 178,
+      "avg_cadence": 95,
+      "start_time": "2026-05-21T06:06:02.000Z"
+    },
+    {
+      "avg_speed": 4.0,
+      "total_distance": 0.15,
+      "total_timer_time": 135,
+      "total_elapsed_time": 135,
+      "avg_heart_rate": 155,
+      "max_heart_rate": 168,
+      "avg_cadence": 82,
+      "start_time": "2026-05-21T06:09:29.000Z"
+    },
+    {
+      "avg_speed": 17.48,
+      "total_distance": 1.01,
+      "total_timer_time": 208,
+      "total_elapsed_time": 208,
+      "avg_heart_rate": 171,
+      "max_heart_rate": 180,
+      "avg_cadence": 96,
+      "start_time": "2026-05-21T06:11:44.000Z"
+    },
+    {
+      "avg_speed": 4.0,
+      "total_distance": 0.15,
+      "total_timer_time": 135,
+      "total_elapsed_time": 135,
+      "avg_heart_rate": 158,
+      "max_heart_rate": 171,
+      "avg_cadence": 82,
+      "start_time": "2026-05-21T06:15:12.000Z"
+    },
+    {
+      "avg_speed": 17.48,
+      "total_distance": 0.99,
+      "total_timer_time": 204,
+      "total_elapsed_time": 205,
+      "avg_heart_rate": 172,
+      "max_heart_rate": 181,
+      "avg_cadence": 96,
+      "start_time": "2026-05-21T06:17:27.000Z"
+    },
+    {
+      "avg_speed": 4.0,
+      "total_distance": 0.15,
+      "total_timer_time": 135,
+      "total_elapsed_time": 135,
+      "avg_heart_rate": 160,
+      "max_heart_rate": 172,
+      "avg_cadence": 83,
+      "start_time": "2026-05-21T06:20:52.000Z"
+    },
+    {
+      "avg_speed": 17.48,
+      "total_distance": 1.00,
+      "total_timer_time": 206,
+      "total_elapsed_time": 206,
+      "avg_heart_rate": 173,
+      "max_heart_rate": 182,
+      "avg_cadence": 95,
+      "start_time": "2026-05-21T06:23:07.000Z"
+    },
+    {
+      "avg_speed": 4.0,
+      "total_distance": 0.15,
+      "total_timer_time": 135,
+      "total_elapsed_time": 135,
+      "avg_heart_rate": 161,
+      "max_heart_rate": 173,
+      "avg_cadence": 82,
+      "start_time": "2026-05-21T06:26:33.000Z"
+    },
+    {
+      "avg_speed": 17.48,
+      "total_distance": 1.02,
+      "total_timer_time": 210,
+      "total_elapsed_time": 210,
+      "avg_heart_rate": 174,
+      "max_heart_rate": 183,
+      "avg_cadence": 96,
+      "start_time": "2026-05-21T06:28:48.000Z"
+    },
+    {
+      "avg_speed": 4.0,
+      "total_distance": 0.15,
+      "total_timer_time": 135,
+      "total_elapsed_time": 135,
+      "avg_heart_rate": 162,
+      "max_heart_rate": 174,
+      "avg_cadence": 83,
+      "start_time": "2026-05-21T06:32:18.000Z"
+    },
+    {
+      "avg_speed": 17.48,
+      "total_distance": 0.99,
+      "total_timer_time": 204,
+      "total_elapsed_time": 204,
+      "avg_heart_rate": 172,
+      "max_heart_rate": 181,
+      "avg_cadence": 95,
+      "start_time": "2026-05-21T06:34:33.000Z"
+    },
+    {
+      "avg_speed": 4.0,
+      "total_distance": 0.15,
+      "total_timer_time": 135,
+      "total_elapsed_time": 135,
+      "avg_heart_rate": 160,
+      "max_heart_rate": 172,
+      "avg_cadence": 82,
+      "start_time": "2026-05-21T06:37:57.000Z"
+    },
+    {
+      "avg_speed": 17.48,
+      "total_distance": 1.00,
+      "total_timer_time": 206,
+      "total_elapsed_time": 207,
+      "avg_heart_rate": 171,
+      "max_heart_rate": 180,
+      "avg_cadence": 95,
+      "start_time": "2026-05-21T06:40:12.000Z"
+    },
+    {
+      "avg_speed": 10.0,
+      "total_distance": 1.00,
+      "total_timer_time": 360,
+      "total_elapsed_time": 363,
+      "avg_heart_rate": 148,
+      "max_heart_rate": 171,
+      "avg_cadence": 87,
+      "start_time": "2026-05-21T06:43:39.000Z"
+    }
+  ],
+  "sessions": [
+    {
+      "sport": "running",
+      "total_distance": 10.96,
+      "total_elapsed_time": 3482,
+      "total_timer_time": 3474,
+      "avg_heart_rate": 162
+    }
+  ]
+}
