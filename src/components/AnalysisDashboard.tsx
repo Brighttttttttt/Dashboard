@@ -158,6 +158,7 @@ function AnalysisResult({ analysis, onReset }: { analysis: WorkoutAnalysis; onRe
   const recLabel = avgRecSec > 0
     ? `~${Math.floor(avgRecSec / 60)}min${avgRecSec % 60 > 0 ? Math.round(avgRecSec % 60) + 's' : ''}`
     : '—'
+  const isTimeBased = analysis.sets.length > 0 && analysis.sets.every(s => s.isTimeBased)
 
   return (
     <div className="space-y-8">
@@ -195,8 +196,8 @@ function AnalysisResult({ analysis, onReset }: { analysis: WorkoutAnalysis; onRe
           sub={`${analysis.sets.length > 1 ? `${analysis.sets.length} séries` : ''}`}
         />
         <StatCard
-          label="Distance effort"
-          value={formatDistance(analysis.totalEffortDistance)}
+          label={isTimeBased ? 'Temps effort' : 'Distance effort'}
+          value={isTimeBased ? formatDuration(analysis.totalEffortTime) : formatDistance(analysis.totalEffortDistance)}
         />
         <StatCard
           label="Distance totale"
@@ -218,7 +219,7 @@ function AnalysisResult({ analysis, onReset }: { analysis: WorkoutAnalysis; onRe
             <div key={si} className="bg-[#161616] border border-[#262626] rounded-xl p-4">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-white font-semibold">
-                  {analysis.sets.length > 1 ? `Série ${si + 1} — ` : ''}{set.reps}×{set.distanceLabel}
+                  {analysis.sets.length > 1 ? `Série ${si + 1} — ` : ''}{set.reps}×{set.effortLabel}
                 </span>
                 <span className="text-[#E8FF47] font-mono text-sm">{set.avgEffortPace}/km moy.</span>
               </div>
@@ -229,7 +230,9 @@ function AnalysisResult({ analysis, onReset }: { analysis: WorkoutAnalysis; onRe
                     <div key={ri} className="flex flex-col items-center gap-1">
                       <div className="bg-[#E8FF47]/10 border border-[#E8FF47]/20 rounded-lg p-2 w-full text-center">
                         <p className="text-[#E8FF47] font-mono text-xs font-bold">{lap.avgPace}</p>
-                        <p className="text-[#6B7280] text-[10px]">{(lap.distance * 1000).toFixed(0)}m</p>
+                        <p className="text-[#6B7280] text-[10px]">
+                          {set.isTimeBased ? formatDuration(lap.timerTime) : `${(lap.distance * 1000).toFixed(0)}m`}
+                        </p>
                       </div>
                       {rec && (
                         <div className="bg-blue-500/10 border border-blue-500/20 rounded px-1 py-0.5 w-full text-center">
