@@ -22,8 +22,9 @@ Ouvrir **http://localhost:3000** dans le navigateur.
 ## Ce que le dashboard détecte
 
 - **Type de séance** : intervalles, facile, tempo
-- **Structure** : `7×1km`, `2×(4×400m)`, etc.
-- **Par répétition** : allure, distance
+- **Structure** : `7×1km`, `6×1'30"`, `2×(4×400m)`, etc.
+- **Intervalles par distance ou par temps** : détection automatique selon ce qui a varié le moins
+- **Par répétition** : allure, distance ou durée selon le type
 - **Récupérations** : durée moyenne entre les efforts
 - **Métriques globales** : allure effort moy., distance effort, distance totale, FC moy.
 - **Graphique** : vitesse par lap (effort / récupération / échauffement)
@@ -49,6 +50,9 @@ src/
     api/analyze/route.ts     → API : parse FIT + analyse
   lib/
     workoutAnalyzer.ts       → Moteur de détection des intervalles
+    workoutAnalyzer.test.ts  → Tests unitaires (Vitest)
+    workoutAnalyzer.regression.test.ts → Test de régression
+    __fixtures__/            → Fixtures JSON pour les tests
   components/
     AnalysisDashboard.tsx    → Interface principale (upload + résultats)
     LapChart.tsx             → Graphique vitesse par lap
@@ -63,3 +67,16 @@ src/
 - **Tailwind CSS**
 - **Recharts** — graphiques
 - **fit-file-parser** — lecture du format FIT standard (ANT+)
+- **Vitest** — tests unitaires et de régression
+- **ESLint** + **@typescript-eslint** — linting statique
+
+## Tests
+
+```bash
+npm test       # 58 tests (unitaires + régression)
+npm run lint   # ESLint TypeScript
+```
+
+Les tests couvrent toutes les fonctions de `workoutAnalyzer.ts` : classification des laps, détection time-based, labels de structure, arrondi des distances, formatage des allures.
+
+Le test de régression utilise un fixture JSON synthétique (`src/lib/__fixtures__/7x1km_session.json`) représentant une session 7×1km réaliste, sans données personnelles.
