@@ -48,19 +48,19 @@ export interface WorkoutAnalysis {
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
-function speedToPaceSeconds(speedKmh: number): number {
+export function speedToPaceSeconds(speedKmh: number): number {
   if (!speedKmh || speedKmh <= 0) return 0
   return 3600 / speedKmh
 }
 
-function formatPace(paceSeconds: number): string {
+export function formatPace(paceSeconds: number): string {
   if (!paceSeconds || paceSeconds <= 0) return '--:--'
   const min = Math.floor(paceSeconds / 60)
   const sec = Math.round(paceSeconds % 60)
   return `${min}:${sec.toString().padStart(2, '0')}`
 }
 
-function cv(values: number[]): number {
+export function cv(values: number[]): number {
   if (values.length < 2) return 0
   const mean = values.reduce((s, v) => s + v, 0) / values.length
   if (mean === 0) return 0
@@ -70,7 +70,7 @@ function cv(values: number[]): number {
 
 const DURATION_SNAP_SECONDS = 5  // adjust to change snap granularity for set title labels
 
-function formatDurationLabel(seconds: number): string {
+export function formatDurationLabel(seconds: number): string {
   const snapped = Math.round(seconds / DURATION_SNAP_SECONDS) * DURATION_SNAP_SECONDS
   const min = Math.floor(snapped / 60)
   const sec = snapped % 60
@@ -79,7 +79,7 @@ function formatDurationLabel(seconds: number): string {
   return `${min}'${sec.toString().padStart(2, '0')}"`
 }
 
-function roundDistance(distanceKm: number): string {
+export function roundDistance(distanceKm: number): string {
   const m = distanceKm * 1000
   const standards = [100, 200, 300, 400, 500, 600, 800, 1000, 1200, 1500, 2000, 3000, 5000, 10000]
   const nearest = standards.reduce((prev, curr) =>
