@@ -9,6 +9,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: read
 
     steps:
       - uses: actions/checkout@v4
@@ -26,3 +29,16 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Close linked issues
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          issues=$(echo "$PR_BODY" | grep -oP '(?i)(?:closes?|fixes?|resolves?)\s+#\K[0-9]+' || true)
+          for issue in $issues; do
+            gh issue close "$issue" --repo "$REPO" --comment "Fermée automatiquement — PR #$PR_NUMBER mergée." 2>/dev/null || true
+          done
