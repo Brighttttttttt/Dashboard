@@ -23,6 +23,9 @@ src/
     api/analyze/route.ts     → POST: parse FIT + analyzeWorkout()
   lib/
     workoutAnalyzer.ts       → Moteur de détection des intervalles
+    workoutAnalyzer.test.ts  → Tests unitaires Vitest (48 tests)
+    workoutAnalyzer.regression.test.ts → Test de régression (fixture JSON)
+    __fixtures__/            → Fixtures JSON pour les tests (pas de fichiers FIT)
   components/
     AnalysisDashboard.tsx    → Upload + affichage résultats (client)
     LapChart.tsx             → Bar chart Recharts (client)
@@ -70,10 +73,17 @@ Expliquer simplement, ne pas noyer dans les détails techniques web.
 - `feat/<nom>` : nouvelle feature → branche depuis `dev`, PR vers `dev`
 - `fix/<nom>` : correction de bug → branche depuis `dev`, PR vers `dev`
 
+### Exception : changements purement documentaires
+
+Pour les modifications qui ne touchent que la doc (README, CHANGELOG, CLAUDE.md, commentaires) :
+- **Pas besoin de créer une issue** — passer directement à la branche.
+- Utiliser le préfixe `docs/<nom>` pour la branche.
+
 ### Ordre à respecter impérativement
 
 1. **Créer une issue GitHub** décrivant la feature ou le bug en langage naturel (français).
    L'utilisateur valide l'issue avant que le développement commence.
+   **Si l'approche décidée change après la création de l'issue**, mettre à jour la description de l'issue avant de commencer à coder.
 
 2. **Créer la branche** depuis `dev` :
    ```bash
@@ -99,5 +109,6 @@ Pousser un commit supplémentaire sur une PR ouverte peut déclencher le merge a
 
 ## Fichiers importants
 
-- `samples/` → fichiers FIT de test, non commités (dans .gitignore)
+- `samples/` → fichiers FIT de test, non commités (dans .gitignore) — données personnelles GPS
+- `src/lib/__fixtures__/` → fixtures JSON synthétiques pour les tests, commités dans le repo
 - `CHANGELOG.md` → à mettre à jour à chaque version
