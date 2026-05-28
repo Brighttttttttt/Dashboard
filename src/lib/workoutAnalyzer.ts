@@ -68,9 +68,12 @@ function cv(values: number[]): number {
   return Math.sqrt(variance) / mean
 }
 
+const DURATION_SNAP_SECONDS = 5  // adjust to change snap granularity for set title labels
+
 function formatDurationLabel(seconds: number): string {
-  const min = Math.floor(seconds / 60)
-  const sec = Math.round(seconds % 60)
+  const snapped = Math.round(seconds / DURATION_SNAP_SECONDS) * DURATION_SNAP_SECONDS
+  const min = Math.floor(snapped / 60)
+  const sec = snapped % 60
   if (min === 0) return `${sec}"`
   if (sec === 0) return `${min}'`
   return `${min}'${sec.toString().padStart(2, '0')}"`
@@ -78,15 +81,14 @@ function formatDurationLabel(seconds: number): string {
 
 function roundDistance(distanceKm: number): string {
   const m = distanceKm * 1000
-  // Round to nearest standard distance
   const standards = [100, 200, 300, 400, 500, 600, 800, 1000, 1200, 1500, 2000, 3000, 5000, 10000]
   const nearest = standards.reduce((prev, curr) =>
     Math.abs(curr - m) < Math.abs(prev - m) ? curr : prev
   )
-  if (Math.abs(nearest - m) / m < 0.08) {
+  if (Math.abs(nearest - m) / m < 0.10) {
     return nearest >= 1000 ? `${nearest / 1000}km` : `${nearest}m`
   }
-  // fallback
+  // fallback: valeur brute
   return m >= 1000 ? `${(distanceKm).toFixed(2)}km` : `${Math.round(m)}m`
 }
 
