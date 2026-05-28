@@ -59,6 +59,7 @@ Dynamics, etc.) sont ignorés sans erreur grâce à l'option `force: true` du pa
 
 - Fond `#0C0C0C`, accent brand `#E8FF47` (lime)
 - Effort = lime, Récupération = blue-400, Facile/Échauff = gris
+- Le dashboard doit être utilisable sur mobile ET desktop — tester les deux avant de valider une feature UI
 
 ## Profil utilisateur
 
