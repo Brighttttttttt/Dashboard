@@ -223,7 +223,7 @@ function AnalysisResult({ analysis, onReset }: { analysis: WorkoutAnalysis; onRe
                 </span>
                 <span className="text-[#E8FF47] font-mono text-sm">{set.avgEffortPace}/km moy.</span>
               </div>
-              <div className="grid grid-cols-7 gap-2">
+              <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(72px, 1fr))' }}>
                 {set.efforts.map((lap, ri) => {
                   const rec = set.recoveries[ri]
                   return (
