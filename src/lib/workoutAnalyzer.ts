@@ -18,6 +18,9 @@ export interface LapData {
 export interface IntervalSet {
   reps: number
   distanceLabel: string   // "1km", "800m"
+  effortLabel: string     // "1km", "800m" or "1'15\"" — use this in UI
+  isTimeBased: boolean
+  avgEffortTime: number   // seconds (average per effort lap)
   avgEffortPace: string
   avgEffortPaceSeconds: number
   avgRecoveryTime: number // seconds
@@ -55,6 +58,22 @@ function formatPace(paceSeconds: number): string {
   const min = Math.floor(paceSeconds / 60)
   const sec = Math.round(paceSeconds % 60)
   return `${min}:${sec.toString().padStart(2, '0')}`
+}
+
+function cv(values: number[]): number {
+  if (values.length < 2) return 0
+  const mean = values.reduce((s, v) => s + v, 0) / values.length
+  if (mean === 0) return 0
+  const variance = values.reduce((s, v) => s + (v - mean) ** 2, 0) / values.length
+  return Math.sqrt(variance) / mean
+}
+
+function formatDurationLabel(seconds: number): string {
+  const min = Math.floor(seconds / 60)
+  const sec = Math.round(seconds % 60)
+  if (min === 0) return `${sec}"`
+  if (sec === 0) return `${min}'`
+  return `${min}'${sec.toString().padStart(2, '0')}"`
 }
 
 function roundDistance(distanceKm: number): string {
@@ -183,14 +202,27 @@ export function analyzeWorkout(fitData: any): WorkoutAnalysis {
       const avgEffortPaceSeconds = speedToPaceSeconds(avgEffortSpeed)
       const avgDistKm =
         raw.efforts.reduce((s, l) => s + l.distance, 0) / raw.efforts.length
+      const avgTimeSec =
+        raw.efforts.reduce((s, l) => s + l.timerTime, 0) / raw.efforts.length
       const avgRec =
         raw.recoveries.length
           ? raw.recoveries.reduce((s, l) => s + l.timerTime, 0) / raw.recoveries.length
           : 0
 
+      // Time-based detection: time CV much lower than distance CV → watch beeped on timer
+      const timesCV = cv(raw.efforts.map(l => l.timerTime))
+      const distsCV = cv(raw.efforts.map(l => l.distance))
+      const isTimeBased = raw.efforts.length >= 2 && timesCV < distsCV * 0.7
+
+      const distanceLabel = roundDistance(avgDistKm)
+      const effortLabel = isTimeBased ? formatDurationLabel(Math.round(avgTimeSec)) : distanceLabel
+
       sets.push({
         reps: raw.efforts.length,
-        distanceLabel: roundDistance(avgDistKm),
+        distanceLabel,
+        effortLabel,
+        isTimeBased,
+        avgEffortTime: avgTimeSec,
         avgEffortPace: formatPace(avgEffortPaceSeconds),
         avgEffortPaceSeconds,
         avgRecoveryTime: avgRec,
@@ -218,13 +250,13 @@ export function analyzeWorkout(fitData: any): WorkoutAnalysis {
   // ── Step 6: structure string ──
   let structure = ''
   if (sets.length === 1) {
-    structure = `${sets[0].reps}×${sets[0].distanceLabel}`
+    structure = `${sets[0].reps}×${sets[0].effortLabel}`
   } else if (sets.length > 1) {
-    const allSameDist = sets.every(s => s.distanceLabel === sets[0].distanceLabel)
-    if (allSameDist && sets.every(s => s.reps === sets[0].reps)) {
-      structure = `${sets.length}×(${sets[0].reps}×${sets[0].distanceLabel})`
+    const allSameLabel = sets.every(s => s.effortLabel === sets[0].effortLabel)
+    if (allSameLabel && sets.every(s => s.reps === sets[0].reps)) {
+      structure = `${sets.length}×(${sets[0].reps}×${sets[0].effortLabel})`
     } else {
-      structure = sets.map(s => `${s.reps}×${s.distanceLabel}`).join(' + ')
+      structure = sets.map(s => `${s.reps}×${s.effortLabel}`).join(' + ')
     }
   }
 
