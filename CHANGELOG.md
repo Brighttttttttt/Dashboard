@@ -18,3 +18,4 @@
   - Graphique vitesse par lap (lime = effort, bleu = récup, gris = facile)
   - Tableau complet des laps (allure, FC, cadence, durée)
 - Design sombre avec accent lime (`#E8FF47`)
+
