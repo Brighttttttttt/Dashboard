@@ -11,7 +11,7 @@
     "lint": "eslint src --ext .ts,.tsx"
   },
   "dependencies": {
-    "fit-file-parser": "^1.10.0",
+    "fit-file-parser": "^3.0.1",
     "next": "^16.2.6",
     "react": "^18",
     "react-dom": "^18",
