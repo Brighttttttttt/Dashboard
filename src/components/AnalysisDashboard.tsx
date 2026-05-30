@@ -235,6 +235,14 @@ function AnalysisResult({ analysis, onReset }: { analysis: WorkoutAnalysis; onRe
       {/* Summary cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard
+          label="Distance totale"
+          value={formatDistance(analysis.totalDistance)}
+        />
+        <StatCard
+          label="Durée totale"
+          value={formatDuration(analysis.totalDuration)}
+        />
+        <StatCard
           label="Allure moyenne"
           value={analysis.totalDistance > 0
             ? `${formatPace(analysis.activeTime / analysis.totalDistance)}/km`
@@ -243,14 +251,6 @@ function AnalysisResult({ analysis, onReset }: { analysis: WorkoutAnalysis; onRe
         <StatCard
           label="FC moyenne"
           value={analysis.avgHR > 0 ? `${analysis.avgHR} bpm` : '—'}
-        />
-        <StatCard
-          label="Durée totale"
-          value={formatDuration(analysis.totalDuration)}
-        />
-        <StatCard
-          label="Distance totale"
-          value={formatDistance(analysis.totalDistance)}
         />
       </div>
 
