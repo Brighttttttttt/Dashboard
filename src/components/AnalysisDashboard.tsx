@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef } from 'react'
 import dynamic from 'next/dynamic'
+import { formatPace } from '@/lib/workoutAnalyzer'
 import type { WorkoutAnalysis, LapData } from '@/lib/workoutAnalyzer'
 
 const LapChart = dynamic(() => import('./LapChart'), { ssr: false })
@@ -20,6 +21,18 @@ function formatDuration(sec: number) {
 function formatDistance(km: number) {
   if (km >= 1) return `${km.toFixed(2)} km`
   return `${(km * 1000).toFixed(0)} m`
+}
+
+function phaseStats(laps: LapData[]) {
+  if (!laps.length) return null
+  const totalDist = laps.reduce((s, l) => s + l.distance, 0)
+  const totalTime = laps.reduce((s, l) => s + l.timerTime, 0)
+  const paceSeconds = totalDist > 0 ? totalTime / totalDist : 0
+  const hrsWithData = laps.filter(l => l.avgHR > 0)
+  const avgHR = hrsWithData.length
+    ? Math.round(hrsWithData.reduce((s, l) => s + l.avgHR, 0) / hrsWithData.length)
+    : 0
+  return { totalDist, totalTime, paceSeconds, avgHR }
 }
 
 // ─── sub-components ──────────────────────────────────────────────────────────
@@ -75,6 +88,50 @@ function LapRow({ lap }: { lap: LapData }) {
         {formatDuration(lap.timerTime)}
       </td>
     </tr>
+  )
+}
+
+const PHASE_LABEL: Record<string, string> = {
+  warmup: 'Échauffement',
+  effort: 'Effort',
+  recovery: 'Récupération',
+  cooldown: 'Retour calme',
+}
+
+function PhaseCard({ type, laps }: { type: string; laps: LapData[] }) {
+  const stats = phaseStats(laps)
+  if (!stats) return null
+  return (
+    <div className="bg-[#161616] border border-[#262626] rounded-xl p-4">
+      <div className="flex items-center gap-2 mb-3">
+        <span className={`text-xs px-2 py-0.5 rounded-full border ${TYPE_BADGE[type]}`}>
+          {PHASE_LABEL[type]}
+        </span>
+        <span className="text-[#4B5563] text-xs">{laps.length} lap{laps.length > 1 ? 's' : ''}</span>
+      </div>
+      <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+        <div>
+          <p className="text-[#4B5563] text-[10px] uppercase tracking-wider">Allure</p>
+          <p className="text-white text-sm font-mono font-bold">
+            {stats.paceSeconds > 0 ? `${formatPace(stats.paceSeconds)}/km` : '—'}
+          </p>
+        </div>
+        <div>
+          <p className="text-[#4B5563] text-[10px] uppercase tracking-wider">FC moy.</p>
+          <p className="text-white text-sm font-mono font-bold">
+            {stats.avgHR > 0 ? `${stats.avgHR} bpm` : '—'}
+          </p>
+        </div>
+        <div>
+          <p className="text-[#4B5563] text-[10px] uppercase tracking-wider">Temps</p>
+          <p className="text-white text-sm font-mono font-bold">{formatDuration(stats.totalTime)}</p>
+        </div>
+        <div>
+          <p className="text-[#4B5563] text-[10px] uppercase tracking-wider">Distance</p>
+          <p className="text-white text-sm font-mono font-bold">{formatDistance(stats.totalDist)}</p>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -153,11 +210,6 @@ function UploadZone({ onAnalysis }: { onAnalysis: (a: WorkoutAnalysis) => void }
 // ─── analysis result ─────────────────────────────────────────────────────────
 
 function AnalysisResult({ analysis, onReset }: { analysis: WorkoutAnalysis; onReset: () => void }) {
-  const mainSet = analysis.sets[0]
-  const avgRecSec = mainSet?.avgRecoveryTime ?? 0
-  const recLabel = avgRecSec > 0
-    ? `~${Math.floor(avgRecSec / 60)}min${avgRecSec % 60 > 0 ? Math.round(avgRecSec % 60) + 's' : ''}`
-    : '—'
   const isTimeBased = analysis.sets.length > 0 && analysis.sets.every(s => s.isTimeBased)
 
   return (
@@ -174,11 +226,6 @@ function AnalysisResult({ analysis, onReset }: { analysis: WorkoutAnalysis; onRe
           <h2 className="text-3xl font-bold text-white">
             {analysis.structure || 'Séance de course'}
           </h2>
-          {mainSet && (
-            <p className="text-[#6B7280] mt-1">
-              Récupération moyenne : {recLabel}
-            </p>
-          )}
         </div>
         <button
           onClick={onReset}
@@ -210,6 +257,23 @@ function AnalysisResult({ analysis, onReset }: { analysis: WorkoutAnalysis; onRe
           sub={`Durée active ${formatDuration(analysis.activeTime)}`}
         />
       </div>
+
+      {/* Phase KPIs */}
+      {(() => {
+        const phases = (['warmup', 'effort', 'recovery', 'cooldown'] as const)
+          .map(type => ({ type, laps: analysis.laps.filter(l => l.type === type) }))
+          .filter(p => p.laps.length > 0)
+        return phases.length > 0 ? (
+          <div className="space-y-3">
+            <h3 className="text-[#6B7280] text-sm uppercase tracking-wider">Phases</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {phases.map(({ type, laps }) => (
+                <PhaseCard key={type} type={type} laps={laps} />
+              ))}
+            </div>
+          </div>
+        ) : null
+      })()}
 
       {/* Per-set detail */}
       {analysis.sets.length > 0 && (
