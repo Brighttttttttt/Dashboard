@@ -103,11 +103,10 @@ function PhaseCard({ type, laps }: { type: string; laps: LapData[] }) {
   if (!stats) return null
   return (
     <div className="bg-[#161616] border border-[#262626] rounded-xl p-4">
-      <div className="flex items-center gap-2 mb-3">
+      <div className="mb-3">
         <span className={`text-xs px-2 py-0.5 rounded-full border ${TYPE_BADGE[type]}`}>
           {PHASE_LABEL[type]}
         </span>
-        <span className="text-[#4B5563] text-xs">{laps.length} lap{laps.length > 1 ? 's' : ''}</span>
       </div>
       <div className="grid grid-cols-2 gap-x-4 gap-y-2">
         <div>
