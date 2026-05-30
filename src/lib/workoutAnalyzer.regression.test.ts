@@ -9,7 +9,7 @@ describe('regression — 7×1km Coros session', () => {
     expect(result.workoutType).toBe('intervals')
   })
 
-  it(`structure = "7×1km (2'15\")"`, () => {
+  it(`structure = "7×1km (2'15")"`, () => {
     expect(result.structure).toBe(`7×1km (2'15")`)
   })
 

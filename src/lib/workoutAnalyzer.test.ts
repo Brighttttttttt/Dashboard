@@ -163,7 +163,7 @@ describe('analyzeWorkout — 7×1km (distance-based)', () => {
     mkLap(10, 1.0, 360), // cooldown
   ]
 
-  it(`structure "7×1km (2'15\")"`, () => {
+  it(`structure "7×1km (2'15")"`, () => {
     expect(analyzeWorkout(mkFit(laps)).structure).toBe(`7×1km (2'15")`)
   })
   it('1 set, 7 reps', () => {
@@ -196,7 +196,7 @@ describe(`analyzeWorkout — 6×1'30" (time-based)`, () => {
   const recs = Array.from({ length: 5 }, () => mkLap(4, 0.1, 60))
   const laps = efforts.flatMap((e, i) => i < 5 ? [e, recs[i]] : [e])
 
-  it(`structure "6×1'30\" (100m)"`, () => {
+  it(`structure "6×1'30" (100m)"`, () => {
     expect(analyzeWorkout(mkFit(laps)).structure).toBe(`6×1'30" (100m)`)
   })
   it('isTimeBased = true', () => {
