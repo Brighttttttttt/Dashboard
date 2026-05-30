@@ -24,6 +24,7 @@ export interface IntervalSet {
   avgEffortPace: string
   avgEffortPaceSeconds: number
   avgRecoveryTime: number // seconds
+  recoveryLabel: string   // "1'30\"", "200m" or "" if no recovery
   efforts: LapData[]
   recoveries: LapData[]
 }
@@ -101,6 +102,13 @@ function isDistanceStandard(distanceKm: number): boolean {
   return Math.abs(nearest - m) / m < 0.10
 }
 
+// Recovery: prefer time by default; use distance only if clearly more regular or snaps to a standard
+export function formatRecoveryLabel(avgTimeSec: number, avgDistKm: number, timesCV = 0, distsCV = 0): string {
+  if (isDistanceStandard(avgDistKm)) return roundDistance(avgDistKm)
+  if (distsCV < timesCV * 0.7) return roundDistance(avgDistKm)
+  return formatDurationLabel(Math.round(avgTimeSec))
+}
+
 // ─── main classifier ─────────────────────────────────────────────────────────
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -168,6 +176,7 @@ export function analyzeWorkout(fitData: any): WorkoutAnalysis {
   const recoveryLaps = laps.filter(l => l.type === 'recovery')
 
   const sets: IntervalSet[] = []
+  let interSetRecoveryLabel = ''
 
   if (effortLaps.length > 0) {
     // Detect set boundaries: a recovery that is > 2× average recovery duration → new set
@@ -182,6 +191,7 @@ export function analyzeWorkout(fitData: any): WorkoutAnalysis {
     let currentSetEfforts: LapData[] = []
     let currentSetRecoveries: LapData[] = []
     const rawSets: Array<{ efforts: LapData[]; recoveries: LapData[] }> = []
+    const superRecoveryLaps: LapData[] = []
 
     // Walk through the interval block laps in order
     const intervalBlock = laps.filter(
@@ -198,6 +208,7 @@ export function analyzeWorkout(fitData: any): WorkoutAnalysis {
           rawSets.push({ efforts: currentSetEfforts, recoveries: currentSetRecoveries })
           currentSetEfforts = []
           currentSetRecoveries = []
+          superRecoveryLaps.push(lap)
         } else {
           currentSetRecoveries.push(lap)
         }
@@ -205,6 +216,14 @@ export function analyzeWorkout(fitData: any): WorkoutAnalysis {
     }
     if (currentSetEfforts.length > 0) {
       rawSets.push({ efforts: currentSetEfforts, recoveries: currentSetRecoveries })
+    }
+
+    if (superRecoveryLaps.length > 0) {
+      const avgInterTimeSec = superRecoveryLaps.reduce((s, l) => s + l.timerTime, 0) / superRecoveryLaps.length
+      const avgInterDistKm = superRecoveryLaps.reduce((s, l) => s + l.distance, 0) / superRecoveryLaps.length
+      const interTimesCV = cv(superRecoveryLaps.map(l => l.timerTime))
+      const interDistsCV = cv(superRecoveryLaps.map(l => l.distance))
+      interSetRecoveryLabel = formatRecoveryLabel(avgInterTimeSec, avgInterDistKm, interTimesCV, interDistsCV)
     }
 
     for (const raw of rawSets) {
@@ -219,6 +238,15 @@ export function analyzeWorkout(fitData: any): WorkoutAnalysis {
         raw.recoveries.length
           ? raw.recoveries.reduce((s, l) => s + l.timerTime, 0) / raw.recoveries.length
           : 0
+      const avgRecDistKm =
+        raw.recoveries.length
+          ? raw.recoveries.reduce((s, l) => s + l.distance, 0) / raw.recoveries.length
+          : 0
+      const recTimesCV = cv(raw.recoveries.map(l => l.timerTime))
+      const recDistsCV = cv(raw.recoveries.map(l => l.distance))
+      const recoveryLabel = raw.recoveries.length > 0
+        ? formatRecoveryLabel(avgRec, avgRecDistKm, recTimesCV, recDistsCV)
+        : ''
 
       // Time-based detection: time CV much lower than distance CV → watch beeped on timer
       const timesCV = cv(raw.efforts.map(l => l.timerTime))
@@ -241,6 +269,7 @@ export function analyzeWorkout(fitData: any): WorkoutAnalysis {
         avgEffortPace: formatPace(avgEffortPaceSeconds),
         avgEffortPaceSeconds,
         avgRecoveryTime: avgRec,
+        recoveryLabel,
         efforts: raw.efforts,
         recoveries: raw.recoveries,
       })
@@ -265,13 +294,21 @@ export function analyzeWorkout(fitData: any): WorkoutAnalysis {
   // ── Step 6: structure string ──
   let structure = ''
   if (sets.length === 1) {
-    structure = `${sets[0].reps}×${sets[0].effortLabel}`
+    const recSuffix = sets[0].recoveryLabel ? ` (${sets[0].recoveryLabel})` : ''
+    structure = `${sets[0].reps}×${sets[0].effortLabel}${recSuffix}`
   } else if (sets.length > 1) {
     const allSameLabel = sets.every(s => s.effortLabel === sets[0].effortLabel)
     if (allSameLabel && sets.every(s => s.reps === sets[0].reps)) {
-      structure = `${sets.length}×(${sets[0].reps}×${sets[0].effortLabel})`
+      const recLabel = sets[0].recoveryLabel
+      const recSuffix = (recLabel || interSetRecoveryLabel)
+        ? ` (${[recLabel, interSetRecoveryLabel].filter(Boolean).join('/')})`
+        : ''
+      structure = `${sets.length}×(${sets[0].reps}×${sets[0].effortLabel})${recSuffix}`
     } else {
-      structure = sets.map(s => `${s.reps}×${s.effortLabel}`).join(' + ')
+      structure = sets.map(s => {
+        const recSuffix = s.recoveryLabel ? ` (${s.recoveryLabel})` : ''
+        return `${s.reps}×${s.effortLabel}${recSuffix}`
+      }).join(' + ')
     }
   }
 
