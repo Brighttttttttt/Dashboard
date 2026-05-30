@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   analyzeWorkout,
   formatDurationLabel,
+  formatRecoveryLabel,
   roundDistance,
   formatPace,
   speedToPaceSeconds,
@@ -86,6 +87,17 @@ describe('cv', () => {
   it('moyenne zéro → 0', () => expect(cv([0, 0, 0])).toBe(0))
 })
 
+// ─── formatRecoveryLabel ─────────────────────────────────────────────────────
+
+describe('formatRecoveryLabel', () => {
+  it('distance standard → label distance (100m)', () => expect(formatRecoveryLabel(60, 0.10)).toBe('100m'))
+  it('distance standard → label distance (300m)', () => expect(formatRecoveryLabel(300, 0.30)).toBe('300m'))
+  it('distance non-standard, CVs nuls → time-based par défaut', () => expect(formatRecoveryLabel(135, 0.15)).toBe(`2'15"`))
+  it('distance non-standard, CVs nuls → time-based (60s → "1\'")', () => expect(formatRecoveryLabel(60, 0.067)).toBe(`1'`))
+  it('distance clairement plus régulière → distance-based', () => expect(formatRecoveryLabel(90, 0.17, 0.08, 0.02)).toBe('170m'))
+  it('temps clairement plus régulier → time-based', () => expect(formatRecoveryLabel(90, 0.17, 0.02, 0.08)).toBe(`1'30"`))
+})
+
 // ─── classification des laps ──────────────────────────────────────────────────
 
 describe('classification des laps', () => {
@@ -151,8 +163,8 @@ describe('analyzeWorkout — 7×1km (distance-based)', () => {
     mkLap(10, 1.0, 360), // cooldown
   ]
 
-  it('structure "7×1km"', () => {
-    expect(analyzeWorkout(mkFit(laps)).structure).toBe('7×1km')
+  it(`structure "7×1km (2'15\")"`, () => {
+    expect(analyzeWorkout(mkFit(laps)).structure).toBe(`7×1km (2'15")`)
   })
   it('1 set, 7 reps', () => {
     const { sets } = analyzeWorkout(mkFit(laps))
@@ -184,8 +196,8 @@ describe(`analyzeWorkout — 6×1'30" (time-based)`, () => {
   const recs = Array.from({ length: 5 }, () => mkLap(4, 0.1, 60))
   const laps = efforts.flatMap((e, i) => i < 5 ? [e, recs[i]] : [e])
 
-  it(`structure "6×1'30""`, () => {
-    expect(analyzeWorkout(mkFit(laps)).structure).toBe(`6×1'30"`)
+  it(`structure "6×1'30\" (100m)"`, () => {
+    expect(analyzeWorkout(mkFit(laps)).structure).toBe(`6×1'30" (100m)`)
   })
   it('isTimeBased = true', () => {
     expect(analyzeWorkout(mkFit(laps)).sets[0].isTimeBased).toBe(true)
@@ -209,8 +221,8 @@ describe('analyzeWorkout — 2×(4×400m) (multi-séries)', () => {
     mkLap(10, 1.0, 360),           // cooldown
   ]
 
-  it('structure "2×(4×400m)"', () => {
-    expect(analyzeWorkout(mkFit(laps)).structure).toBe('2×(4×400m)')
+  it(`structure "2×(4×400m) (1'/300m)"`, () => {
+    expect(analyzeWorkout(mkFit(laps)).structure).toBe(`2×(4×400m) (1'/300m)`)
   })
   it('2 sets de 4 reps chacun', () => {
     const { sets } = analyzeWorkout(mkFit(laps))
@@ -231,8 +243,8 @@ describe('analyzeWorkout — 3×400m + 3×800m (séries mixtes)', () => {
     mk(0.80), rec(), mk(0.81), rec(), mk(0.79),
   ]
 
-  it('structure "3×400m + 3×800m"', () => {
-    expect(analyzeWorkout(mkFit(laps)).structure).toBe('3×400m + 3×800m')
+  it(`structure "3×400m (1') + 3×800m (1')"`, () => {
+    expect(analyzeWorkout(mkFit(laps)).structure).toBe(`3×400m (1') + 3×800m (1')`)
   })
 })
 
