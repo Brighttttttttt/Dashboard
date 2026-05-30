@@ -92,6 +92,15 @@ export function roundDistance(distanceKm: number): string {
   return m >= 1000 ? `${(distanceKm).toFixed(2)}km` : `${Math.round(m)}m`
 }
 
+function isDistanceStandard(distanceKm: number): boolean {
+  const m = distanceKm * 1000
+  const standards = [100, 200, 300, 400, 500, 600, 800, 1000, 1200, 1500, 2000, 3000, 5000, 10000]
+  const nearest = standards.reduce((prev, curr) =>
+    Math.abs(curr - m) < Math.abs(prev - m) ? curr : prev
+  )
+  return Math.abs(nearest - m) / m < 0.10
+}
+
 // ─── main classifier ─────────────────────────────────────────────────────────
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -214,7 +223,11 @@ export function analyzeWorkout(fitData: any): WorkoutAnalysis {
       // Time-based detection: time CV much lower than distance CV → watch beeped on timer
       const timesCV = cv(raw.efforts.map(l => l.timerTime))
       const distsCV = cv(raw.efforts.map(l => l.distance))
-      const isTimeBased = raw.efforts.length >= 2 && timesCV < distsCV * 0.7
+      // Si la distance snape vers une valeur standard (400m, 500m, 1km…) → distance-based,
+      // même si les temps sont aussi réguliers (ex : 2×500m avec 503m/1:36 et 512m/1:35)
+      const isTimeBased = !isDistanceStandard(avgDistKm)
+        && raw.efforts.length >= 2
+        && timesCV < distsCV * 0.7
 
       const distanceLabel = roundDistance(avgDistKm)
       const effortLabel = isTimeBased ? formatDurationLabel(Math.round(avgTimeSec)) : distanceLabel
