@@ -170,14 +170,15 @@ describe('analyzeWorkout — 7×1km (distance-based)', () => {
 })
 
 describe(`analyzeWorkout — 6×1'30" (time-based)`, () => {
-  // Temps très stables (~90s), distances variables → CV(temps) << CV(distances) → isTimeBased=true
+  // Temps très stables (~90s), distances variables dans la zone 335-360m
+  // (hors de toute distance standard → snapping désactivé → détection par CV)
   const effortData = [
-    { dist: 0.38, timer: 89 },
-    { dist: 0.41, timer: 91 },
-    { dist: 0.39, timer: 90 },
-    { dist: 0.40, timer: 89 },
-    { dist: 0.37, timer: 91 },
-    { dist: 0.42, timer: 90 },
+    { dist: 0.335, timer: 89 },
+    { dist: 0.360, timer: 91 },
+    { dist: 0.345, timer: 90 },
+    { dist: 0.355, timer: 89 },
+    { dist: 0.340, timer: 91 },
+    { dist: 0.350, timer: 90 },
   ]
   const efforts = effortData.map(({ dist, timer }) => mkLap((dist / timer) * 3600, dist, timer))
   const recs = Array.from({ length: 5 }, () => mkLap(4, 0.1, 60))
@@ -232,6 +233,23 @@ describe('analyzeWorkout — 3×400m + 3×800m (séries mixtes)', () => {
 
   it('structure "3×400m + 3×800m"', () => {
     expect(analyzeWorkout(mkFit(laps)).structure).toBe('3×400m + 3×800m')
+  })
+})
+
+describe('analyzeWorkout — 2×500m (distance et temps tous les deux réguliers)', () => {
+  // Cas réel : 503m/1:36 + 512m/1:35
+  // CV(temps)≈0.005, CV(dist)≈0.009 → ratio 0.56 → sans guard distanceStandard,
+  // classé time-based à tort (507m snape vers 500m → distance-based attendu)
+  const efforts = [
+    mkLap((0.503 / 96) * 3600, 0.503, 96),
+    mkLap((0.512 / 95) * 3600, 0.512, 95),
+  ]
+
+  it('isTimeBased = false (500m est une distance standard)', () => {
+    expect(analyzeWorkout(mkFit(efforts)).sets[0].isTimeBased).toBe(false)
+  })
+  it('structure = "2×500m"', () => {
+    expect(analyzeWorkout(mkFit(efforts)).structure).toBe('2×500m')
   })
 })
 
