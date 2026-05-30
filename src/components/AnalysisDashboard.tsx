@@ -210,8 +210,6 @@ function UploadZone({ onAnalysis }: { onAnalysis: (a: WorkoutAnalysis) => void }
 // ─── analysis result ─────────────────────────────────────────────────────────
 
 function AnalysisResult({ analysis, onReset }: { analysis: WorkoutAnalysis; onReset: () => void }) {
-  const isTimeBased = analysis.sets.length > 0 && analysis.sets.every(s => s.isTimeBased)
-
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -238,23 +236,22 @@ function AnalysisResult({ analysis, onReset }: { analysis: WorkoutAnalysis; onRe
       {/* Summary cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard
-          label="Allure effort"
-          value={`${analysis.avgEffortPace}/km`}
-          sub={`${analysis.sets.length > 1 ? `${analysis.sets.length} séries` : ''}`}
-        />
-        <StatCard
-          label={isTimeBased ? 'Temps effort' : 'Distance effort'}
-          value={isTimeBased ? formatDuration(analysis.totalEffortTime) : formatDistance(analysis.totalEffortDistance)}
-        />
-        <StatCard
-          label="Distance totale"
-          value={formatDistance(analysis.totalDistance)}
-          sub={`Échauff. ${formatDistance(analysis.warmupDistance)} · Ret. calme ${formatDistance(analysis.cooldownDistance)}`}
+          label="Allure moyenne"
+          value={analysis.totalDistance > 0
+            ? `${formatPace(analysis.activeTime / analysis.totalDistance)}/km`
+            : '--:--'}
         />
         <StatCard
           label="FC moyenne"
           value={analysis.avgHR > 0 ? `${analysis.avgHR} bpm` : '—'}
-          sub={`Durée active ${formatDuration(analysis.activeTime)}`}
+        />
+        <StatCard
+          label="Durée totale"
+          value={formatDuration(analysis.totalDuration)}
+        />
+        <StatCard
+          label="Distance totale"
+          value={formatDistance(analysis.totalDistance)}
         />
       </div>
 
