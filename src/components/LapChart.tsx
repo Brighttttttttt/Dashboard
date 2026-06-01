@@ -1,8 +1,9 @@
 'use client'
 
 import {
-  BarChart,
+  ComposedChart,
   Bar,
+  Line,
   XAxis,
   YAxis,
   Tooltip,
@@ -58,48 +59,86 @@ function formatDuration(sec: number) {
 export default function LapChart({ laps, avgEffortPaceSeconds }: Props) {
   const data = laps.map(l => ({
     ...l,
-    // Y-axis: speed in km/h — higher bar = faster
     speed: parseFloat(l.avgSpeed.toFixed(2)),
+    hr: l.avgHR > 0 ? l.avgHR : null,
   }))
 
-  // Reference line: average effort speed
   const avgEffortSpeed = avgEffortPaceSeconds > 0 ? 3600 / avgEffortPaceSeconds : undefined
+  const hasHR = data.some(d => d.hr !== null)
 
   return (
-    <div className="w-full h-64">
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
-          <XAxis
-            dataKey="index"
-            tickFormatter={(v) => `L${v + 1}`}
-            tick={{ fill: '#6B7280', fontSize: 11 }}
-            axisLine={{ stroke: '#333' }}
-            tickLine={false}
-          />
-          <YAxis
-            domain={[0, 'auto']}
-            tick={{ fill: '#6B7280', fontSize: 11 }}
-            axisLine={false}
-            tickLine={false}
-            tickFormatter={(v) => `${v}`}
-            label={{ value: 'km/h', angle: -90, position: 'insideLeft', fill: '#4B5563', fontSize: 11, dx: 12 }}
-          />
-          <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
-          {avgEffortSpeed && (
-            <ReferenceLine
-              y={avgEffortSpeed}
-              stroke="#E8FF47"
-              strokeDasharray="4 4"
-              strokeOpacity={0.6}
+    <div className="w-full">
+      <div className="w-full h-64">
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart data={data} margin={{ top: 8, right: hasHR ? 40 : 8, left: -16, bottom: 0 }}>
+            <XAxis
+              dataKey="index"
+              tickFormatter={(v) => `L${v + 1}`}
+              tick={{ fill: '#6B7280', fontSize: 11 }}
+              axisLine={{ stroke: '#333' }}
+              tickLine={false}
             />
-          )}
-          <Bar dataKey="speed" radius={[3, 3, 0, 0]} maxBarSize={32}>
-            {data.map((entry) => (
-              <Cell key={entry.index} fill={TYPE_COLOR[entry.type] ?? '#6B7280'} />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
+            <YAxis
+              yAxisId="speed"
+              domain={[0, 'auto']}
+              tick={{ fill: '#6B7280', fontSize: 11 }}
+              axisLine={false}
+              tickLine={false}
+              label={{ value: 'km/h', angle: -90, position: 'insideLeft', fill: '#4B5563', fontSize: 11, dx: 12 }}
+            />
+            {hasHR && (
+              <YAxis
+                yAxisId="hr"
+                orientation="right"
+                domain={['auto', 'auto']}
+                tick={{ fill: '#F87171', fontSize: 11 }}
+                axisLine={false}
+                tickLine={false}
+                label={{ value: 'bpm', angle: 90, position: 'insideRight', fill: '#F87171', fontSize: 11, dx: -4 }}
+              />
+            )}
+            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
+            {avgEffortSpeed && (
+              <ReferenceLine
+                yAxisId="speed"
+                y={avgEffortSpeed}
+                stroke="#E8FF47"
+                strokeDasharray="4 4"
+                strokeOpacity={0.6}
+              />
+            )}
+            <Bar yAxisId="speed" dataKey="speed" radius={[3, 3, 0, 0]} maxBarSize={32}>
+              {data.map((entry) => (
+                <Cell key={entry.index} fill={TYPE_COLOR[entry.type] ?? '#6B7280'} />
+              ))}
+            </Bar>
+            {hasHR && (
+              <Line
+                yAxisId="hr"
+                dataKey="hr"
+                type="monotone"
+                stroke="#F87171"
+                strokeWidth={2}
+                dot={{ r: 3, fill: '#F87171', strokeWidth: 0 }}
+                activeDot={{ r: 5, fill: '#F87171' }}
+                connectNulls={false}
+              />
+            )}
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
+      {hasHR && (
+        <div className="flex gap-4 mt-2 px-2 text-xs text-[#6B7280]">
+          <span className="flex items-center gap-1.5">
+            <span className="inline-block w-3 h-3 rounded-sm bg-[#E8FF47]" />
+            Allure (km/h)
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="inline-block w-3 h-0.5 bg-[#F87171]" />
+            FC (bpm)
+          </span>
+        </div>
+      )}
     </div>
   )
 }
