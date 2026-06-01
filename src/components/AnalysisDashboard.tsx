@@ -6,6 +6,7 @@ import { formatPace, getHRZone } from '@/lib/workoutAnalyzer'
 import type { WorkoutAnalysis, LapData, HRZoneConfig, HRZoneMethod } from '@/lib/workoutAnalyzer'
 
 const LapChart = dynamic(() => import('./LapChart'), { ssr: false })
+const MapView = dynamic(() => import('./MapView'), { ssr: false })
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -526,6 +527,18 @@ function AnalysisResult({ analysis, hrZoneConfig, onSaveHrZoneConfig, onReset }:
         </div>
         <LapChart laps={analysis.laps} avgEffortPaceSeconds={analysis.avgEffortPaceSeconds} />
       </div>
+
+      {/* GPS map */}
+      {analysis.gpsTrack.length >= 2 && (
+        <div className="bg-[#161616] border border-[#262626] rounded-xl overflow-hidden">
+          <div className="p-4 border-b border-[#262626]">
+            <h3 className="text-[#6B7280] text-sm uppercase tracking-wider">Tracé GPS</h3>
+          </div>
+          <div className="p-2">
+            <MapView points={analysis.gpsTrack} />
+          </div>
+        </div>
+      )}
 
       {/* Lap table */}
       <div className="bg-[#161616] border border-[#262626] rounded-xl overflow-hidden">

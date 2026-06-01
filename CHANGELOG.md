@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.3.0] — 2026-06-01
+
+### Visualisation avancée
+
+#### Ajouté
+- **Carte GPS** : tracé de la séance sur fond sombre (CartoDB Dark Matter) via react-leaflet. Affiché uniquement si des données GPS sont présentes (absent pour tapis roulant / piscine). Tracé lime (`#E8FF47`), `fitBounds` automatique.
+- **Courbe FC en overlay** : `LapChart` passe de `BarChart` à `ComposedChart` (Recharts). Axe Y droit pour la FC (bpm), gaps automatiques si un lap n'a pas de données FC.
+- **Cohérence des répétitions** : chaque barre d'effort est colorée vert→rouge selon l'écart à l'allure moyenne (seuil 8%). Séance régulière → toutes vertes, séance irrégulière → dégradé visible.
+- **Résumé automatique** : phrase générée sous le titre (ex. `"7 reps à 3:26/km · FC 162 bpm · allure régulière"`). Détection de tendance par comparaison première/seconde moitié des reps (seuil ±2%).
+- **Tableau des laps amélioré** : laps regroupés par phase (Échauffement / Intervalles / Retour calme) avec en-têtes de section. Nouvelle colonne Δ Allure pour les efforts (vert/lime/rouge selon l'écart).
+
+### Qualité
+- 93 tests unitaires (+ 7 pour `computePaceTrend`)
+- Node.js 24 en CI (LTS actif depuis mai 2026)
+
+---
+
 ## [0.2.0] — 2026-05-29
 
 ### Intervalles par temps (`6×1'30"`)
