@@ -32,6 +32,7 @@ export interface IntervalSet {
 export interface WorkoutAnalysis {
   workoutType: 'intervals' | 'easy' | 'tempo' | 'unknown'
   structure: string           // "7×1km"
+  summary: string             // "7 reps à 3:26/km · FC 162 bpm · allure régulière"
   sport: string
   totalDistance: number       // km
   totalDuration: number       // seconds elapsed
@@ -149,6 +150,19 @@ export function getHRZone(hr: number, config: HRZoneConfig): 1 | 2 | 3 | 4 | 5 |
   }
 
   return null
+}
+
+export function computePaceTrend(effortLaps: LapData[]): 'progressive' | 'declining' | 'steady' {
+  if (effortLaps.length < 2) return 'steady'
+  const half = Math.floor(effortLaps.length / 2)
+  const firstHalf = effortLaps.slice(0, half)
+  const secondHalf = effortLaps.slice(effortLaps.length - half)
+  const avg1 = firstHalf.reduce((s, l) => s + l.avgSpeed, 0) / firstHalf.length
+  const avg2 = secondHalf.reduce((s, l) => s + l.avgSpeed, 0) / secondHalf.length
+  const delta = (avg2 - avg1) / avg1
+  if (delta > 0.02) return 'progressive'
+  if (delta < -0.02) return 'declining'
+  return 'steady'
 }
 
 // Recovery: prefer time by default; use distance only if clearly more regular or snaps to a standard
@@ -364,9 +378,31 @@ export function analyzeWorkout(fitData: any): WorkoutAnalysis {
   const workoutType =
     effortLaps.length > 0 ? 'intervals' : 'easy'
 
+  // ── Step 7: summary phrase ──
+  const sessionHR = session.avg_heart_rate ?? 0
+  const totalDist = session.total_distance ?? 0
+  let summary = ''
+
+  if (workoutType === 'intervals' && effortLaps.length > 0) {
+    const totalReps = sets.reduce((s, set) => s + set.reps, 0)
+    const repsStr = totalReps === 1 ? '1 rep' : `${totalReps} reps`
+    const trend = computePaceTrend(effortLaps)
+    const trendLabel = trend === 'progressive' ? 'en progression' : trend === 'declining' ? 'en déclin' : 'régulière'
+    summary = `${repsStr} à ${formatPace(avgEffortPaceSeconds)}/km`
+    if (sessionHR > 0) summary += ` · FC ${sessionHR} bpm`
+    summary += ` · allure ${trendLabel}`
+  } else if (totalDist > 0) {
+    const timerSec = session.total_timer_time ?? 0
+    const globalPaceSec = timerSec > 0 && totalDist > 0 ? timerSec / totalDist : 0
+    const distStr = totalDist >= 1 ? `${totalDist.toFixed(2)} km` : `${Math.round(totalDist * 1000)} m`
+    summary = `Course ${distStr} à ${formatPace(globalPaceSec)}/km`
+    if (sessionHR > 0) summary += ` · FC ${sessionHR} bpm`
+  }
+
   return {
     workoutType,
     structure,
+    summary,
     sport: session.sport ?? 'running',
     totalDistance: session.total_distance ?? 0,
     totalDuration: session.total_elapsed_time ?? 0,
@@ -388,6 +424,7 @@ function emptyAnalysis(session: any): WorkoutAnalysis {
   return {
     workoutType: 'unknown',
     structure: '',
+    summary: '',
     sport: session.sport ?? 'running',
     totalDistance: session.total_distance ?? 0,
     totalDuration: session.total_elapsed_time ?? 0,
