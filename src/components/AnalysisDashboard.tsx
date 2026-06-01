@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic'
 import { formatPace, getHRZone } from '@/lib/workoutAnalyzer'
 import type { WorkoutAnalysis, LapData, HRZoneConfig, HRZoneMethod } from '@/lib/workoutAnalyzer'
 import type { ShareFormat } from './ShareCard'
+import { FORMAT_SIZES } from './ShareCard'
 
 const LapChart = dynamic(() => import('./LapChart'), { ssr: false })
 const MapView = dynamic(() => import('./MapView'), { ssr: false })
@@ -413,7 +414,7 @@ function AnalysisResult({ analysis, hrZoneConfig, onSaveHrZoneConfig, onReset }:
   onReset: () => void
 }) {
   const [shareFormat, setShareFormat] = useState<ShareFormat>(1)
-  const [showExport, setShowExport] = useState(false)
+  const [showModal, setShowModal] = useState(false)
   const [exporting, setExporting] = useState(false)
   const cardRef = useRef<HTMLDivElement>(null)
 
@@ -462,7 +463,7 @@ function AnalysisResult({ analysis, hrZoneConfig, onSaveHrZoneConfig, onReset }:
         </div>
         <div className="flex items-center gap-3">
           <button
-            onClick={() => setShowExport(v => !v)}
+            onClick={() => setShowModal(true)}
             className="text-xs px-3 py-1.5 rounded-lg border border-[#E8FF47]/30 text-[#E8FF47] hover:bg-[#E8FF47]/10 transition-colors"
           >
             Exporter
@@ -476,35 +477,80 @@ function AnalysisResult({ analysis, hrZoneConfig, onSaveHrZoneConfig, onReset }:
         </div>
       </div>
 
-      {showExport && (
-        <div className="bg-[#161616] border border-[#262626] rounded-xl p-4 space-y-3">
-          <p className="text-[#6B7280] text-xs uppercase tracking-wider">Format d&apos;export</p>
-          <div className="flex flex-wrap gap-2">
-            {([1, 2, 3, 4, 5] as ShareFormat[]).map(f => (
+      {/* Export modal */}
+      {showModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-6"
+          style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)' }}
+          onClick={e => { if (e.target === e.currentTarget) setShowModal(false) }}
+        >
+          <div className="bg-[#161616] border border-[#262626] rounded-2xl p-6 flex flex-col gap-5 w-full max-w-[540px] max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between">
+              <span className="text-white font-semibold">Fiche exportable</span>
               <button
-                key={f}
-                onClick={() => setShareFormat(f)}
-                className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
-                  shareFormat === f
-                    ? 'bg-[#E8FF47]/10 border-[#E8FF47]/30 text-[#E8FF47]'
-                    : 'border-[#262626] text-[#6B7280] hover:border-[#444]'
-                }`}
+                onClick={() => setShowModal(false)}
+                className="text-[#4B5563] hover:text-white text-xl leading-none transition-colors"
               >
-                {FORMAT_LABELS[f]}
+                ✕
               </button>
-            ))}
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {([1, 2, 3, 4, 5] as ShareFormat[]).map(f => (
+                <button
+                  key={f}
+                  onClick={() => setShareFormat(f)}
+                  className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
+                    shareFormat === f
+                      ? 'bg-[#E8FF47]/10 border-[#E8FF47]/30 text-[#E8FF47]'
+                      : 'border-[#262626] text-[#6B7280] hover:border-[#444]'
+                  }`}
+                >
+                  {FORMAT_LABELS[f]}
+                </button>
+              ))}
+            </div>
+
+            {(() => {
+              const { w, h } = FORMAT_SIZES[shareFormat]
+              const maxW = 460
+              const maxH = 400
+              const scale = Math.min(maxW / w, maxH / h)
+              return (
+                <div className="flex justify-center">
+                  <div style={{
+                    width: Math.round(w * scale),
+                    height: Math.round(h * scale),
+                    overflow: 'hidden',
+                    borderRadius: 12,
+                    flexShrink: 0,
+                    border: '1px solid rgba(255,255,255,0.06)',
+                  }}>
+                    <div style={{ transform: `scale(${scale})`, transformOrigin: 'top left', width: w, height: h }}>
+                      <ShareCard analysis={analysis} format={shareFormat} />
+                    </div>
+                  </div>
+                </div>
+              )
+            })()}
+
+            <button
+              onClick={handleExport}
+              disabled={exporting}
+              className="bg-[#E8FF47] text-black text-sm font-bold px-4 py-2.5 rounded-lg disabled:opacity-50 hover:bg-[#d4e840] transition-colors"
+            >
+              {exporting ? 'Génération…' : 'Télécharger PNG'}
+            </button>
           </div>
-          <button
-            onClick={handleExport}
-            disabled={exporting}
-            className="bg-[#E8FF47] text-black text-xs font-bold px-4 py-2 rounded-lg disabled:opacity-50 hover:bg-[#d4e840] transition-colors"
-          >
-            {exporting ? 'Génération…' : 'Télécharger PNG'}
-          </button>
         </div>
       )}
 
-      <ShareCard analysis={analysis} format={shareFormat} cardRef={cardRef} />
+      {/* div off-screen pour html2canvas (résolution pleine) */}
+      <div style={{ position: 'fixed', top: -9999, left: -9999, pointerEvents: 'none', zIndex: -1 }} aria-hidden="true">
+        <div ref={cardRef}>
+          <ShareCard analysis={analysis} format={shareFormat} />
+        </div>
+      </div>
 
       {/* HR Zone settings */}
       <HRZoneSettings config={hrZoneConfig} onSave={onSaveHrZoneConfig} />
