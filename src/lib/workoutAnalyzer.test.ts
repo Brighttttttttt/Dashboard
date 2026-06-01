@@ -3,11 +3,13 @@ import {
   analyzeWorkout,
   formatDurationLabel,
   formatRecoveryLabel,
+  getHRZone,
   roundDistance,
   formatPace,
   speedToPaceSeconds,
   cv,
 } from './workoutAnalyzer'
+import type { HRZoneConfig } from './workoutAnalyzer'
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -85,6 +87,40 @@ describe('cv', () => {
   it('tableau vide → 0', () => expect(cv([])).toBe(0))
   it('[80, 90, 100, 110] → ~0.118', () => expect(cv([80, 90, 100, 110])).toBeCloseTo(0.118, 2))
   it('moyenne zéro → 0', () => expect(cv([0, 0, 0])).toBe(0))
+})
+
+// ─── getHRZone ────────────────────────────────────────────────────────────────
+
+describe('getHRZone — % FCmax (fcMax=190)', () => {
+  const cfg: HRZoneConfig = { method: 'hrmax', fcMax: 190 }
+  it('Z1 (110 bpm = 57.9%)', () => expect(getHRZone(110, cfg)).toBe(1))
+  it('Z2 (125 bpm = 65.8%)', () => expect(getHRZone(125, cfg)).toBe(2))
+  it('Z3 (145 bpm = 76.3%)', () => expect(getHRZone(145, cfg)).toBe(3))
+  it('Z4 (163 bpm = 85.8%)', () => expect(getHRZone(163, cfg)).toBe(4))
+  it('Z5 (180 bpm = 94.7%)', () => expect(getHRZone(180, cfg)).toBe(5))
+  it('hr=0 → null', () => expect(getHRZone(0, cfg)).toBeNull())
+  it('fcMax absent → null', () => expect(getHRZone(150, { method: 'hrmax' })).toBeNull())
+})
+
+describe('getHRZone — FC seuil LTHR (lthr=165)', () => {
+  const cfg: HRZoneConfig = { method: 'lthr', lthr: 165 }
+  it('Z1 (135 bpm = 81.8%)', () => expect(getHRZone(135, cfg)).toBe(1))
+  it('Z2 (143 bpm = 86.7%)', () => expect(getHRZone(143, cfg)).toBe(2))
+  it('Z3 (153 bpm = 92.7%)', () => expect(getHRZone(153, cfg)).toBe(3))
+  it('Z4 (161 bpm = 97.6%)', () => expect(getHRZone(161, cfg)).toBe(4))
+  it('Z5 (170 bpm = 103%)', () => expect(getHRZone(170, cfg)).toBe(5))
+  it('lthr absent → null', () => expect(getHRZone(150, { method: 'lthr' })).toBeNull())
+})
+
+describe('getHRZone — Karvonen (fcMax=190, fcRest=50, réserve=140)', () => {
+  const cfg: HRZoneConfig = { method: 'karvonen', fcMax: 190, fcRest: 50 }
+  it('Z1 (90 bpm = 28.6% FCR)', () => expect(getHRZone(90, cfg)).toBe(1))
+  it('Z2 (125 bpm = 53.6% FCR)', () => expect(getHRZone(125, cfg)).toBe(2))
+  it('Z3 (137 bpm = 62.1% FCR)', () => expect(getHRZone(137, cfg)).toBe(3))
+  it('Z4 (150 bpm = 71.4% FCR)', () => expect(getHRZone(150, cfg)).toBe(4))
+  it('Z5 (165 bpm = 82.1% FCR)', () => expect(getHRZone(165, cfg)).toBe(5))
+  it('fcMax absent → null', () => expect(getHRZone(150, { method: 'karvonen', fcRest: 50 })).toBeNull())
+  it('fcRest absent → null', () => expect(getHRZone(150, { method: 'karvonen', fcMax: 190 })).toBeNull())
 })
 
 // ─── formatRecoveryLabel ─────────────────────────────────────────────────────
