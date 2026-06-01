@@ -29,6 +29,11 @@ export interface IntervalSet {
   recoveries: LapData[]
 }
 
+export interface GpsPoint {
+  lat: number
+  lon: number
+}
+
 export interface WorkoutAnalysis {
   workoutType: 'intervals' | 'easy' | 'tempo' | 'unknown'
   structure: string           // "7×1km"
@@ -46,6 +51,7 @@ export interface WorkoutAnalysis {
   cooldownDistance: number    // km
   laps: LapData[]
   sets: IntervalSet[]
+  gpsTrack: GpsPoint[]
 }
 
 // ─── helpers ────────────────────────────────────────────────────────────────
@@ -174,10 +180,21 @@ export function formatRecoveryLabel(avgTimeSec: number, avgDistKm: number, times
 
 // ─── main classifier ─────────────────────────────────────────────────────────
 
+const SEMICIRCLES_TO_DEG = 180 / 2147483648
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function analyzeWorkout(fitData: any): WorkoutAnalysis {
   const rawLaps = (fitData.laps ?? []) as any[]
   const session = fitData.sessions?.[0] ?? {}
+
+  // Extract GPS track from records (may be absent for treadmill / pool)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const gpsTrack: GpsPoint[] = ((fitData.records ?? []) as any[])
+    .filter((r: any) => r.position_lat != null && r.position_long != null)
+    .map((r: any) => ({
+      lat: r.position_lat * SEMICIRCLES_TO_DEG,
+      lon: r.position_long * SEMICIRCLES_TO_DEG,
+    }))
 
   if (!rawLaps.length) {
     return emptyAnalysis(session)
@@ -416,6 +433,7 @@ export function analyzeWorkout(fitData: any): WorkoutAnalysis {
     cooldownDistance,
     laps,
     sets,
+    gpsTrack,
   }
 }
 
@@ -438,5 +456,6 @@ function emptyAnalysis(session: any): WorkoutAnalysis {
     cooldownDistance: 0,
     laps: [],
     sets: [],
+    gpsTrack: [],
   }
 }
