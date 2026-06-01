@@ -420,6 +420,9 @@ function AnalysisResult({ analysis, hrZoneConfig, onSaveHrZoneConfig, onReset }:
           <h2 className="text-3xl font-bold text-white">
             {analysis.structure || 'Séance de course'}
           </h2>
+          {analysis.summary && (
+            <p className="text-[#6B7280] text-sm italic mt-1">{analysis.summary}</p>
+          )}
         </div>
         <button
           onClick={onReset}
