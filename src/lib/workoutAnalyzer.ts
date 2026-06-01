@@ -180,20 +180,19 @@ export function formatRecoveryLabel(avgTimeSec: number, avgDistKm: number, times
 
 // ─── main classifier ─────────────────────────────────────────────────────────
 
-const SEMICIRCLES_TO_DEG = 180 / 2147483648
-
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function analyzeWorkout(fitData: any): WorkoutAnalysis {
   const rawLaps = (fitData.laps ?? []) as any[]
   const session = fitData.sessions?.[0] ?? {}
 
   // Extract GPS track from records (may be absent for treadmill / pool)
+  // fit-file-parser converts semicircles → degrees automatically, use values directly
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const gpsTrack: GpsPoint[] = ((fitData.records ?? []) as any[])
     .filter((r: any) => r.position_lat != null && r.position_long != null)
     .map((r: any) => ({
-      lat: r.position_lat * SEMICIRCLES_TO_DEG,
-      lon: r.position_long * SEMICIRCLES_TO_DEG,
+      lat: r.position_lat as number,
+      lon: r.position_long as number,
     }))
 
   if (!rawLaps.length) {

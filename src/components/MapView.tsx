@@ -2,7 +2,6 @@
 
 import { useEffect } from 'react'
 import { MapContainer, TileLayer, Polyline, useMap } from 'react-leaflet'
-import 'leaflet/dist/leaflet.css'
 import type { GpsPoint } from '@/lib/workoutAnalyzer'
 
 function FitBounds({ points }: { points: GpsPoint[] }) {
