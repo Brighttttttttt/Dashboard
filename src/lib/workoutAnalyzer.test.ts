@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   analyzeWorkout,
+  computePaceTrend,
   formatDurationLabel,
   formatRecoveryLabel,
   getHRZone,
@@ -9,7 +10,7 @@ import {
   speedToPaceSeconds,
   cv,
 } from './workoutAnalyzer'
-import type { HRZoneConfig } from './workoutAnalyzer'
+import type { HRZoneConfig, LapData } from './workoutAnalyzer'
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -335,5 +336,37 @@ describe("analyzeWorkout — 1 seul lap d'effort", () => {
   })
   it('pas de crash', () => {
     expect(() => analyzeWorkout(mkFit(laps))).not.toThrow()
+  })
+})
+
+// ─── computePaceTrend ─────────────────────────────────────────────────────────
+
+function mkEffortLap(speed: number): LapData {
+  return { avgSpeed: speed } as LapData
+}
+
+describe('computePaceTrend', () => {
+  it('renvoie steady si aucun lap', () => {
+    expect(computePaceTrend([])).toBe('steady')
+  })
+  it('renvoie steady si 1 seul lap', () => {
+    expect(computePaceTrend([mkEffortLap(17)])).toBe('steady')
+  })
+  it('détecte une progression (2e moitié +3.5%)', () => {
+    expect(computePaceTrend([mkEffortLap(17), mkEffortLap(17.6)])).toBe('progressive')
+  })
+  it('détecte un déclin (2e moitié -3.5%)', () => {
+    expect(computePaceTrend([mkEffortLap(17.6), mkEffortLap(17)])).toBe('declining')
+  })
+  it('renvoie steady si écart < 2% (1.2%)', () => {
+    expect(computePaceTrend([mkEffortLap(17), mkEffortLap(17.2)])).toBe('steady')
+  })
+  it('4 reps croissantes → progressive', () => {
+    const laps = [16, 16.5, 17, 17.5].map(mkEffortLap)
+    expect(computePaceTrend(laps)).toBe('progressive')
+  })
+  it('4 reps décroissantes → declining', () => {
+    const laps = [17.5, 17, 16.5, 16].map(mkEffortLap)
+    expect(computePaceTrend(laps)).toBe('declining')
   })
 })
