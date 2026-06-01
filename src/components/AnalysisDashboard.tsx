@@ -4,9 +4,11 @@ import React, { useState, useCallback, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import { formatPace, getHRZone } from '@/lib/workoutAnalyzer'
 import type { WorkoutAnalysis, LapData, HRZoneConfig, HRZoneMethod } from '@/lib/workoutAnalyzer'
+import type { ShareFormat } from './ShareCard'
 
 const LapChart = dynamic(() => import('./LapChart'), { ssr: false })
 const MapView = dynamic(() => import('./MapView'), { ssr: false })
+const ShareCard = dynamic(() => import('./ShareCard'), { ssr: false })
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -396,12 +398,45 @@ function UploadZone({ onAnalysis }: { onAnalysis: (a: WorkoutAnalysis) => void }
 
 // ─── analysis result ─────────────────────────────────────────────────────────
 
+const FORMAT_LABELS: Record<ShareFormat, string> = {
+  1: 'Carte (4:5)',
+  2: 'Carré GPS',
+  3: 'Story (9:16)',
+  4: 'Paysage (16:9)',
+  5: 'Sticker',
+}
+
 function AnalysisResult({ analysis, hrZoneConfig, onSaveHrZoneConfig, onReset }: {
   analysis: WorkoutAnalysis
   hrZoneConfig: HRZoneConfig | null
   onSaveHrZoneConfig: (c: HRZoneConfig) => void
   onReset: () => void
 }) {
+  const [shareFormat, setShareFormat] = useState<ShareFormat>(1)
+  const [showExport, setShowExport] = useState(false)
+  const [exporting, setExporting] = useState(false)
+  const cardRef = useRef<HTMLDivElement>(null)
+
+  const handleExport = async () => {
+    if (!cardRef.current) return
+    setExporting(true)
+    try {
+      const html2canvas = (await import('html2canvas')).default
+      const canvas = await html2canvas(cardRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: shareFormat === 5 ? null : '#0C0C0C',
+        logging: false,
+      })
+      const link = document.createElement('a')
+      link.download = `bright-f${shareFormat}-${new Date().toISOString().slice(0, 10)}.png`
+      link.href = canvas.toDataURL('image/png')
+      link.click()
+    } finally {
+      setExporting(false)
+    }
+  }
+
   const lapZones = hrZoneConfig
     ? analysis.laps.map(l => getHRZone(l.avgHR, hrZoneConfig))
     : analysis.laps.map(() => null)
@@ -425,13 +460,51 @@ function AnalysisResult({ analysis, hrZoneConfig, onSaveHrZoneConfig, onReset }:
             <p className="text-[#6B7280] text-sm italic mt-1">{analysis.summary}</p>
           )}
         </div>
-        <button
-          onClick={onReset}
-          className="text-[#4B5563] hover:text-white text-sm transition-colors flex items-center gap-1"
-        >
-          ← Nouvelle séance
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowExport(v => !v)}
+            className="text-xs px-3 py-1.5 rounded-lg border border-[#E8FF47]/30 text-[#E8FF47] hover:bg-[#E8FF47]/10 transition-colors"
+          >
+            Exporter
+          </button>
+          <button
+            onClick={onReset}
+            className="text-[#4B5563] hover:text-white text-sm transition-colors flex items-center gap-1"
+          >
+            ← Nouvelle séance
+          </button>
+        </div>
       </div>
+
+      {showExport && (
+        <div className="bg-[#161616] border border-[#262626] rounded-xl p-4 space-y-3">
+          <p className="text-[#6B7280] text-xs uppercase tracking-wider">Format d&apos;export</p>
+          <div className="flex flex-wrap gap-2">
+            {([1, 2, 3, 4, 5] as ShareFormat[]).map(f => (
+              <button
+                key={f}
+                onClick={() => setShareFormat(f)}
+                className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
+                  shareFormat === f
+                    ? 'bg-[#E8FF47]/10 border-[#E8FF47]/30 text-[#E8FF47]'
+                    : 'border-[#262626] text-[#6B7280] hover:border-[#444]'
+                }`}
+              >
+                {FORMAT_LABELS[f]}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={handleExport}
+            disabled={exporting}
+            className="bg-[#E8FF47] text-black text-xs font-bold px-4 py-2 rounded-lg disabled:opacity-50 hover:bg-[#d4e840] transition-colors"
+          >
+            {exporting ? 'Génération…' : 'Télécharger PNG'}
+          </button>
+        </div>
+      )}
+
+      <ShareCard analysis={analysis} format={shareFormat} cardRef={cardRef} />
 
       {/* HR Zone settings */}
       <HRZoneSettings config={hrZoneConfig} onSave={onSaveHrZoneConfig} />
