@@ -14,11 +14,21 @@ import {
 import type { LapData } from '@/lib/workoutAnalyzer'
 
 const TYPE_COLOR: Record<string, string> = {
-  effort: '#E8FF47',
   recovery: '#60A5FA',
   warmup: '#4B5563',
   cooldown: '#4B5563',
   easy: '#6B7280',
+}
+
+// Vert (#22C55E) → Rouge (#EF4444) selon l'écart relatif à l'allure moyenne d'effort
+// Seuil max : 8 % d'écart = rouge complet
+function effortColor(lapSpeed: number, avgEffortSpeed: number): string {
+  if (avgEffortSpeed <= 0) return '#22C55E'
+  const t = Math.min(Math.abs(lapSpeed - avgEffortSpeed) / avgEffortSpeed / 0.08, 1)
+  const r = Math.round(34 + t * 205)
+  const g = Math.round(197 - t * 129)
+  const b = Math.round(94 - t * 26)
+  return `rgb(${r},${g},${b})`
 }
 
 interface Props {
@@ -109,7 +119,14 @@ export default function LapChart({ laps, avgEffortPaceSeconds }: Props) {
             )}
             <Bar yAxisId="speed" dataKey="speed" radius={[3, 3, 0, 0]} maxBarSize={32}>
               {data.map((entry) => (
-                <Cell key={entry.index} fill={TYPE_COLOR[entry.type] ?? '#6B7280'} />
+                <Cell
+                  key={entry.index}
+                  fill={
+                    entry.type === 'effort' && avgEffortSpeed
+                      ? effortColor(entry.speed, avgEffortSpeed)
+                      : (TYPE_COLOR[entry.type] ?? '#6B7280')
+                  }
+                />
               ))}
             </Bar>
             {hasHR && (
