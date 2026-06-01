@@ -102,6 +102,55 @@ function isDistanceStandard(distanceKm: number): boolean {
   return Math.abs(nearest - m) / m < 0.10
 }
 
+// ─── HR zones ────────────────────────────────────────────────────────────────
+
+export type HRZoneMethod = 'hrmax' | 'lthr' | 'karvonen'
+
+export interface HRZoneConfig {
+  method: HRZoneMethod
+  fcMax?: number   // required for 'hrmax' and 'karvonen'
+  lthr?: number    // required for 'lthr'
+  fcRest?: number  // required for 'karvonen'
+}
+
+export function getHRZone(hr: number, config: HRZoneConfig): 1 | 2 | 3 | 4 | 5 | null {
+  if (!hr || hr <= 0) return null
+
+  if (config.method === 'hrmax') {
+    if (!config.fcMax || config.fcMax <= 0) return null
+    const pct = hr / config.fcMax
+    if (pct < 0.60) return 1
+    if (pct < 0.70) return 2
+    if (pct < 0.80) return 3
+    if (pct < 0.90) return 4
+    return 5
+  }
+
+  if (config.method === 'lthr') {
+    if (!config.lthr || config.lthr <= 0) return null
+    const pct = hr / config.lthr
+    if (pct < 0.85) return 1
+    if (pct < 0.90) return 2
+    if (pct < 0.95) return 3
+    if (pct < 1.00) return 4
+    return 5
+  }
+
+  if (config.method === 'karvonen') {
+    if (!config.fcMax || config.fcMax <= 0 || !config.fcRest || config.fcRest <= 0) return null
+    const reserve = config.fcMax - config.fcRest
+    if (reserve <= 0) return null
+    const pct = (hr - config.fcRest) / reserve
+    if (pct < 0.50) return 1
+    if (pct < 0.60) return 2
+    if (pct < 0.70) return 3
+    if (pct < 0.80) return 4
+    return 5
+  }
+
+  return null
+}
+
 // Recovery: prefer time by default; use distance only if clearly more regular or snaps to a standard
 export function formatRecoveryLabel(avgTimeSec: number, avgDistKm: number, timesCV = 0, distsCV = 0): string {
   if (isDistanceStandard(avgDistKm)) return roundDistance(avgDistKm)

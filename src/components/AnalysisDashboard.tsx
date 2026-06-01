@@ -2,8 +2,8 @@
 
 import { useState, useCallback, useRef } from 'react'
 import dynamic from 'next/dynamic'
-import { formatPace } from '@/lib/workoutAnalyzer'
-import type { WorkoutAnalysis, LapData } from '@/lib/workoutAnalyzer'
+import { formatPace, getHRZone } from '@/lib/workoutAnalyzer'
+import type { WorkoutAnalysis, LapData, HRZoneConfig, HRZoneMethod } from '@/lib/workoutAnalyzer'
 
 const LapChart = dynamic(() => import('./LapChart'), { ssr: false })
 
@@ -63,7 +63,17 @@ const TYPE_LABEL: Record<string, string> = {
   easy: 'Facile',
 }
 
-function LapRow({ lap }: { lap: LapData }) {
+const ZONE_BADGE: Record<number, string> = {
+  1: 'bg-[#262626] text-[#6B7280] border-[#333]',
+  2: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+  3: 'bg-green-500/10 text-green-400 border-green-500/20',
+  4: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
+  5: 'bg-red-500/10 text-red-400 border-red-500/20',
+}
+
+const ZONE_COLORS = ['#4B5563', '#3B82F6', '#22C55E', '#F97316', '#EF4444']
+
+function LapRow({ lap, zone }: { lap: LapData; zone: number | null }) {
   return (
     <tr className="border-b border-[#1A1A1A] hover:bg-[#161616] transition-colors">
       <td className="py-2 px-3 text-[#6B7280] text-sm">{lap.index + 1}</td>
@@ -71,6 +81,13 @@ function LapRow({ lap }: { lap: LapData }) {
         <span className={`text-xs px-2 py-0.5 rounded-full border ${TYPE_BADGE[lap.type]}`}>
           {TYPE_LABEL[lap.type]}
         </span>
+      </td>
+      <td className="py-2 px-3">
+        {zone !== null ? (
+          <span className={`text-xs px-2 py-0.5 rounded-full border ${ZONE_BADGE[zone]}`}>Z{zone}</span>
+        ) : (
+          <span className="text-[#333] text-xs">—</span>
+        )}
       </td>
       <td className="py-2 px-3 text-sm text-white font-mono">
         {(lap.distance * 1000).toFixed(0)}m
@@ -129,6 +146,149 @@ function PhaseCard({ type, laps }: { type: string; laps: LapData[] }) {
           <p className="text-[#4B5563] text-[10px] uppercase tracking-wider">Distance</p>
           <p className="text-white text-sm font-mono font-bold">{formatDistance(stats.totalDist)}</p>
         </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── HR zone settings ────────────────────────────────────────────────────────
+
+function HRZoneSettings({ config, onSave }: { config: HRZoneConfig | null; onSave: (c: HRZoneConfig) => void }) {
+  const [open, setOpen] = useState(!config)
+  const [method, setMethod] = useState<HRZoneMethod>(config?.method ?? 'hrmax')
+  const [fcMax, setFcMax] = useState(config?.fcMax?.toString() ?? '')
+  const [lthr, setLthr] = useState(config?.lthr?.toString() ?? '')
+  const [fcRest, setFcRest] = useState(config?.fcRest?.toString() ?? '')
+
+  const isValid = () => {
+    if (method === 'hrmax') return Number(fcMax) > 0
+    if (method === 'lthr') return Number(lthr) > 0
+    if (method === 'karvonen') return Number(fcMax) > 0 && Number(fcRest) > 0
+    return false
+  }
+
+  const handleSave = () => {
+    const c: HRZoneConfig = { method }
+    if (method === 'hrmax') c.fcMax = Number(fcMax)
+    if (method === 'lthr') c.lthr = Number(lthr)
+    if (method === 'karvonen') { c.fcMax = Number(fcMax); c.fcRest = Number(fcRest) }
+    onSave(c)
+    setOpen(false)
+  }
+
+  if (!open && config) {
+    const summary = config.method === 'hrmax' ? `% FCmax · ${config.fcMax} bpm`
+      : config.method === 'lthr' ? `FC seuil · ${config.lthr} bpm`
+      : `Karvonen · FCmax ${config.fcMax} / FC repos ${config.fcRest}`
+    return (
+      <div className="flex items-center justify-between text-xs text-[#4B5563] px-1">
+        <span>Zones FC — {summary}</span>
+        <button onClick={() => setOpen(true)} className="hover:text-white transition-colors ml-4">Modifier</button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="bg-[#161616] border border-[#262626] rounded-xl p-4 space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-white text-sm font-medium">Paramètres zones FC</h3>
+        {config && (
+          <button onClick={() => setOpen(false)} className="text-[#4B5563] hover:text-white text-xs transition-colors">
+            Annuler
+          </button>
+        )}
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {([
+          { value: 'hrmax' as const, label: '% FCmax' },
+          { value: 'lthr' as const, label: 'FC seuil (Friel)' },
+          { value: 'karvonen' as const, label: 'Karvonen' },
+        ]).map(({ value, label }) => (
+          <button
+            key={value}
+            onClick={() => setMethod(value)}
+            className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
+              method === value
+                ? 'bg-[#E8FF47]/10 border-[#E8FF47]/30 text-[#E8FF47]'
+                : 'border-[#262626] text-[#6B7280] hover:border-[#444]'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <div className="flex flex-wrap gap-3">
+        {(method === 'hrmax' || method === 'karvonen') && (
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] text-[#4B5563] uppercase tracking-wider">FCmax (bpm)</label>
+            <input
+              type="number" value={fcMax} onChange={e => setFcMax(e.target.value)}
+              placeholder="190"
+              className="bg-[#0C0C0C] border border-[#262626] rounded-lg px-3 py-1.5 text-white text-sm w-28 focus:outline-none focus:border-[#E8FF47]/50"
+            />
+          </div>
+        )}
+        {method === 'lthr' && (
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] text-[#4B5563] uppercase tracking-wider">FC seuil (bpm)</label>
+            <input
+              type="number" value={lthr} onChange={e => setLthr(e.target.value)}
+              placeholder="165"
+              className="bg-[#0C0C0C] border border-[#262626] rounded-lg px-3 py-1.5 text-white text-sm w-28 focus:outline-none focus:border-[#E8FF47]/50"
+            />
+          </div>
+        )}
+        {method === 'karvonen' && (
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] text-[#4B5563] uppercase tracking-wider">FC repos (bpm)</label>
+            <input
+              type="number" value={fcRest} onChange={e => setFcRest(e.target.value)}
+              placeholder="50"
+              className="bg-[#0C0C0C] border border-[#262626] rounded-lg px-3 py-1.5 text-white text-sm w-28 focus:outline-none focus:border-[#E8FF47]/50"
+            />
+          </div>
+        )}
+      </div>
+
+      <button
+        onClick={handleSave} disabled={!isValid()}
+        className="bg-[#E8FF47] text-black text-xs font-bold px-4 py-2 rounded-lg disabled:opacity-30 hover:bg-[#d4e840] transition-colors"
+      >
+        Enregistrer
+      </button>
+    </div>
+  )
+}
+
+function ZoneDistribution({ laps, config }: { laps: LapData[]; config: HRZoneConfig }) {
+  const timeByZone = [0, 0, 0, 0, 0]
+  let total = 0
+  for (const lap of laps) {
+    const z = getHRZone(lap.avgHR, config)
+    if (z !== null) { timeByZone[z - 1] += lap.timerTime; total += lap.timerTime }
+  }
+  if (total === 0) return null
+  return (
+    <div className="space-y-2">
+      <h3 className="text-[#6B7280] text-sm uppercase tracking-wider">Répartition zones FC</h3>
+      <div className="flex rounded-lg overflow-hidden h-5">
+        {timeByZone.map((t, i) => {
+          const pct = (t / total) * 100
+          return pct >= 0.5 ? (
+            <div key={i} style={{ width: `${pct}%`, backgroundColor: ZONE_COLORS[i] }}
+              title={`Z${i + 1} : ${Math.round(pct)}%`} />
+          ) : null
+        })}
+      </div>
+      <div className="flex gap-4 flex-wrap">
+        {timeByZone.map((t, i) => t > 0 ? (
+          <div key={i} className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: ZONE_COLORS[i] }} />
+            <span className="text-[#6B7280] text-xs">Z{i + 1} · {Math.round((t / total) * 100)}%</span>
+          </div>
+        ) : null)}
       </div>
     </div>
   )
@@ -208,7 +368,16 @@ function UploadZone({ onAnalysis }: { onAnalysis: (a: WorkoutAnalysis) => void }
 
 // ─── analysis result ─────────────────────────────────────────────────────────
 
-function AnalysisResult({ analysis, onReset }: { analysis: WorkoutAnalysis; onReset: () => void }) {
+function AnalysisResult({ analysis, hrZoneConfig, onSaveHrZoneConfig, onReset }: {
+  analysis: WorkoutAnalysis
+  hrZoneConfig: HRZoneConfig | null
+  onSaveHrZoneConfig: (c: HRZoneConfig) => void
+  onReset: () => void
+}) {
+  const lapZones = hrZoneConfig
+    ? analysis.laps.map(l => getHRZone(l.avgHR, hrZoneConfig))
+    : analysis.laps.map(() => null)
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -231,6 +400,12 @@ function AnalysisResult({ analysis, onReset }: { analysis: WorkoutAnalysis; onRe
           ← Nouvelle séance
         </button>
       </div>
+
+      {/* HR Zone settings */}
+      <HRZoneSettings config={hrZoneConfig} onSave={onSaveHrZoneConfig} />
+
+      {/* Zone distribution */}
+      {hrZoneConfig && <ZoneDistribution laps={analysis.laps} config={hrZoneConfig} />}
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -330,7 +505,7 @@ function AnalysisResult({ analysis, onReset }: { analysis: WorkoutAnalysis; onRe
           <table className="w-full">
             <thead>
               <tr className="border-b border-[#1A1A1A]">
-                {['#', 'Type', 'Distance', 'Allure / Durée', 'FC', 'Cadence', 'Temps actif'].map(h => (
+                {['#', 'Type', 'Zone', 'Distance', 'Allure / Durée', 'FC', 'Cadence', 'Temps actif'].map(h => (
                   <th key={h} className="py-2 px-3 text-left text-[#4B5563] text-xs uppercase tracking-wider font-normal">
                     {h}
                   </th>
@@ -338,7 +513,7 @@ function AnalysisResult({ analysis, onReset }: { analysis: WorkoutAnalysis; onRe
               </tr>
             </thead>
             <tbody>
-              {analysis.laps.map(lap => <LapRow key={lap.index} lap={lap} />)}
+              {analysis.laps.map((lap, i) => <LapRow key={lap.index} lap={lap} zone={lapZones[i]} />)}
             </tbody>
           </table>
         </div>
@@ -351,6 +526,18 @@ function AnalysisResult({ analysis, onReset }: { analysis: WorkoutAnalysis; onRe
 
 export default function AnalysisDashboard() {
   const [analysis, setAnalysis] = useState<WorkoutAnalysis | null>(null)
+  const [hrZoneConfig, setHrZoneConfig] = useState<HRZoneConfig | null>(() => {
+    if (typeof window === 'undefined') return null
+    try {
+      const stored = localStorage.getItem('hrZoneConfig')
+      return stored ? (JSON.parse(stored) as HRZoneConfig) : null
+    } catch { return null }
+  })
+
+  const saveHrZoneConfig = (c: HRZoneConfig) => {
+    setHrZoneConfig(c)
+    localStorage.setItem('hrZoneConfig', JSON.stringify(c))
+  }
 
   return (
     <div className="min-h-screen bg-[#0C0C0C]">
@@ -377,7 +564,7 @@ export default function AnalysisDashboard() {
             <UploadZone onAnalysis={setAnalysis} />
           </div>
         ) : (
-          <AnalysisResult analysis={analysis} onReset={() => setAnalysis(null)} />
+          <AnalysisResult analysis={analysis} hrZoneConfig={hrZoneConfig} onSaveHrZoneConfig={saveHrZoneConfig} onReset={() => setAnalysis(null)} />
         )}
       </main>
     </div>
