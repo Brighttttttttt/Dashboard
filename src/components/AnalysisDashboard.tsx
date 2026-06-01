@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useRef } from 'react'
+import React, { useState, useCallback, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import { formatPace, getHRZone } from '@/lib/workoutAnalyzer'
 import type { WorkoutAnalysis, LapData, HRZoneConfig, HRZoneMethod } from '@/lib/workoutAnalyzer'
@@ -33,6 +33,19 @@ function phaseStats(laps: LapData[]) {
     ? Math.round(hrsWithData.reduce((s, l) => s + l.avgHR, 0) / hrsWithData.length)
     : 0
   return { totalDist, totalTime, paceSeconds, avgHR }
+}
+
+function groupLapsByPhase(laps: LapData[]): Array<{ category: string; laps: LapData[] }> {
+  const groups: Array<{ category: string; laps: LapData[] }> = []
+  for (const lap of laps) {
+    const cat = (lap.type === 'effort' || lap.type === 'recovery') ? 'intervals' : lap.type
+    if (groups.length > 0 && groups[groups.length - 1].category === cat) {
+      groups[groups.length - 1].laps.push(lap)
+    } else {
+      groups.push({ category: cat, laps: [lap] })
+    }
+  }
+  return groups
 }
 
 // ─── sub-components ──────────────────────────────────────────────────────────
@@ -73,7 +86,13 @@ const ZONE_BADGE: Record<number, string> = {
 
 const ZONE_COLORS = ['#4B5563', '#3B82F6', '#22C55E', '#F97316', '#EF4444']
 
-function LapRow({ lap, zone }: { lap: LapData; zone: number | null }) {
+function LapRow({ lap, zone, avgEffortPaceSeconds }: { lap: LapData; zone: number | null; avgEffortPaceSeconds: number }) {
+  let deltaNode: React.ReactNode = <span className="text-[#333]">—</span>
+  if (lap.type === 'effort' && avgEffortPaceSeconds > 0 && lap.avgSpeed > 0) {
+    const delta = Math.round(3600 / lap.avgSpeed - avgEffortPaceSeconds)
+    const color = delta > 3 ? 'text-red-400' : delta < -3 ? 'text-green-400' : 'text-[#E8FF47]'
+    deltaNode = <span className={`font-mono ${color}`}>{delta > 0 ? '+' : ''}{delta}s</span>
+  }
   return (
     <tr className="border-b border-[#1A1A1A] hover:bg-[#161616] transition-colors">
       <td className="py-2 px-3 text-[#6B7280] text-sm">{lap.index + 1}</td>
@@ -95,6 +114,7 @@ function LapRow({ lap, zone }: { lap: LapData; zone: number | null }) {
       <td className="py-2 px-3 text-sm text-white font-mono">
         {lap.type === 'recovery' ? formatDuration(lap.timerTime) : `${lap.avgPace}/km`}
       </td>
+      <td className="py-2 px-3 text-sm">{deltaNode}</td>
       <td className="py-2 px-3 text-sm text-[#A3A3A3]">
         {lap.avgHR > 0 ? `${lap.avgHR} bpm` : '—'}
       </td>
@@ -113,6 +133,13 @@ const PHASE_LABEL: Record<string, string> = {
   effort: 'Effort',
   recovery: 'Récupération',
   cooldown: 'Retour calme',
+}
+
+const GROUP_LABEL: Record<string, string> = {
+  intervals: 'Intervalles',
+  warmup: 'Échauffement',
+  cooldown: 'Retour calme',
+  easy: 'Facile',
 }
 
 function PhaseCard({ type, laps }: { type: string; laps: LapData[] }) {
@@ -377,6 +404,7 @@ function AnalysisResult({ analysis, hrZoneConfig, onSaveHrZoneConfig, onReset }:
   const lapZones = hrZoneConfig
     ? analysis.laps.map(l => getHRZone(l.avgHR, hrZoneConfig))
     : analysis.laps.map(() => null)
+  const lapZoneMap = new Map(analysis.laps.map((l, i) => [l.index, lapZones[i]]))
 
   return (
     <div className="space-y-8">
@@ -505,7 +533,7 @@ function AnalysisResult({ analysis, hrZoneConfig, onSaveHrZoneConfig, onReset }:
           <table className="w-full">
             <thead>
               <tr className="border-b border-[#1A1A1A]">
-                {['#', 'Type', 'Zone', 'Distance', 'Allure / Durée', 'FC', 'Cadence', 'Temps actif'].map(h => (
+                {['#', 'Type', 'Zone', 'Distance', 'Allure / Durée', 'Δ Allure', 'FC', 'Cadence', 'Temps actif'].map(h => (
                   <th key={h} className="py-2 px-3 text-left text-[#4B5563] text-xs uppercase tracking-wider font-normal">
                     {h}
                   </th>
@@ -513,7 +541,36 @@ function AnalysisResult({ analysis, hrZoneConfig, onSaveHrZoneConfig, onReset }:
               </tr>
             </thead>
             <tbody>
-              {analysis.laps.map((lap, i) => <LapRow key={lap.index} lap={lap} zone={lapZones[i]} />)}
+              {groupLapsByPhase(analysis.laps).flatMap((group, gi) => {
+                const stats = phaseStats(group.laps)
+                const header = (
+                  <tr key={`h${gi}`} className="bg-[#111111]">
+                    <td colSpan={9} className="py-1.5 px-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[#6B7280] text-xs uppercase tracking-wider font-medium">
+                          {GROUP_LABEL[group.category] ?? group.category}
+                        </span>
+                        {stats && (
+                          <span className="text-[#4B5563] text-xs font-mono">
+                            {formatDistance(stats.totalDist)}
+                            {stats.paceSeconds > 0 ? ` · ${formatPace(stats.paceSeconds)}/km` : ''}
+                            {stats.avgHR > 0 ? ` · ${stats.avgHR} bpm` : ''}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                )
+                const rows = group.laps.map(lap => (
+                  <LapRow
+                    key={lap.index}
+                    lap={lap}
+                    zone={lapZoneMap.get(lap.index) ?? null}
+                    avgEffortPaceSeconds={analysis.avgEffortPaceSeconds}
+                  />
+                ))
+                return [header, ...rows]
+              })}
             </tbody>
           </table>
         </div>
