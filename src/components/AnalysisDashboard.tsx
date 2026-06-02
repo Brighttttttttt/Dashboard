@@ -417,6 +417,16 @@ function AnalysisResult({ analysis, hrZoneConfig, onSaveHrZoneConfig, onReset }:
   const [showModal, setShowModal] = useState(false)
   const [exporting, setExporting] = useState(false)
   const cardRef = useRef<HTMLDivElement>(null)
+  const [showZones, setShowZones] = useState(false)
+  const [showLaps, setShowLaps] = useState(false)
+  const seriesRef = useRef<HTMLDivElement>(null)
+  const graphRef = useRef<HTMLDivElement>(null)
+  const zonesRef = useRef<HTMLDivElement>(null)
+  const lapsRef = useRef<HTMLDivElement>(null)
+
+  const scrollTo = (ref: React.RefObject<HTMLDivElement | null>) => {
+    ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   const handleExport = async () => {
     if (!cardRef.current) return
@@ -442,39 +452,259 @@ function AnalysisResult({ analysis, hrZoneConfig, onSaveHrZoneConfig, onReset }:
     ? analysis.laps.map(l => getHRZone(l.avgHR, hrZoneConfig))
     : analysis.laps.map(() => null)
   const lapZoneMap = new Map(analysis.laps.map((l, i) => [l.index, lapZones[i]]))
+  const hasSeries = analysis.sets.length > 0
+  const hasGps = analysis.gpsTrack.length >= 2
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          {analysis.workoutType === 'intervals' && (
-            <div className="inline-flex items-center gap-2 bg-[#E8FF47]/10 border border-[#E8FF47]/20 rounded-full px-3 py-1 mb-3">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#E8FF47]" />
-              <span className="text-[#E8FF47] text-xs font-medium uppercase tracking-wider">Intervalles</span>
+    <>
+      {/* ── Sticky session header ── */}
+      <div className="sticky top-[53px] z-20 bg-[#0C0C0C]/95 backdrop-blur-sm border-b border-[#1A1A1A]">
+        <div className="max-w-5xl mx-auto px-6 py-3 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            {analysis.workoutType === 'intervals' && (
+              <span className="shrink-0 bg-[#E8FF47]/10 border border-[#E8FF47]/20 rounded-full px-2.5 py-0.5 text-[#E8FF47] text-xs font-medium uppercase tracking-wider">
+                Intervalles
+              </span>
+            )}
+            <span className="text-white font-bold truncate">
+              {analysis.structure || 'Séance de course'}
+            </span>
+            {analysis.summary && (
+              <span className="text-[#4B5563] text-sm italic hidden md:block truncate">
+                {analysis.summary}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => setShowModal(true)}
+              className="text-xs px-3 py-1.5 rounded-lg border border-[#E8FF47]/30 text-[#E8FF47] hover:bg-[#E8FF47]/10 transition-colors"
+            >
+              Exporter
+            </button>
+            <button
+              onClick={onReset}
+              className="text-[#4B5563] hover:text-white text-sm transition-colors whitespace-nowrap"
+            >
+              ← Nouvelle séance
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Section nav ── */}
+      <div className="sticky top-[101px] z-10 bg-[#0C0C0C]/90 backdrop-blur-sm border-b border-[#1A1A1A]">
+        <div className="max-w-5xl mx-auto px-6">
+          <div className="flex gap-1 overflow-x-auto py-2">
+            {hasSeries && (
+              <button
+                onClick={() => scrollTo(seriesRef)}
+                className="text-xs px-3 py-1.5 rounded-lg text-[#6B7280] hover:text-white hover:bg-[#1A1A1A] transition-colors whitespace-nowrap"
+              >
+                Séries
+              </button>
+            )}
+            <button
+              onClick={() => scrollTo(graphRef)}
+              className="text-xs px-3 py-1.5 rounded-lg text-[#6B7280] hover:text-white hover:bg-[#1A1A1A] transition-colors whitespace-nowrap"
+            >
+              Graphique
+            </button>
+            <button
+              onClick={() => { setShowZones(true); setTimeout(() => scrollTo(zonesRef), 50) }}
+              className="text-xs px-3 py-1.5 rounded-lg text-[#6B7280] hover:text-white hover:bg-[#1A1A1A] transition-colors whitespace-nowrap"
+            >
+              Zones FC
+            </button>
+            <button
+              onClick={() => { setShowLaps(true); setTimeout(() => scrollTo(lapsRef), 50) }}
+              className="text-xs px-3 py-1.5 rounded-lg text-[#6B7280] hover:text-white hover:bg-[#1A1A1A] transition-colors whitespace-nowrap"
+            >
+              Laps
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Contenu principal ── */}
+      <div className="max-w-5xl mx-auto px-6 py-8 space-y-8">
+
+        {/* Hero : résumé + 4 stats */}
+        <div className="space-y-4">
+          {analysis.summary && (
+            <p className="text-[#6B7280] text-sm italic">{analysis.summary}</p>
+          )}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <StatCard label="Distance totale" value={formatDistance(analysis.totalDistance)} />
+            <StatCard label="Durée totale" value={formatDuration(analysis.totalDuration)} />
+            <StatCard
+              label="Allure moyenne"
+              value={analysis.totalDistance > 0
+                ? `${formatPace(analysis.activeTime / analysis.totalDistance)}/km`
+                : '--:--'}
+            />
+            <StatCard label="FC moyenne" value={analysis.avgHR > 0 ? `${analysis.avgHR} bpm` : '—'} />
+          </div>
+        </div>
+
+        {/* Phases */}
+        {(() => {
+          const phases = (['warmup', 'effort', 'recovery', 'cooldown'] as const)
+            .map(type => ({ type, laps: analysis.laps.filter(l => l.type === type) }))
+            .filter(p => p.laps.length > 0)
+          return phases.length > 0 ? (
+            <div className="space-y-3">
+              <h3 className="text-[#6B7280] text-sm uppercase tracking-wider">Phases</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {phases.map(({ type, laps }) => (
+                  <PhaseCard key={type} type={type} laps={laps} />
+                ))}
+              </div>
+            </div>
+          ) : null
+        })()}
+
+        {/* Carte GPS — remontée après le hero */}
+        {hasGps && (
+          <div className="bg-[#161616] border border-[#262626] rounded-xl overflow-hidden">
+            <div className="p-4 border-b border-[#262626]">
+              <h3 className="text-[#6B7280] text-sm uppercase tracking-wider">Tracé GPS</h3>
+            </div>
+            <div className="p-2">
+              <MapView points={analysis.gpsTrack} />
+            </div>
+          </div>
+        )}
+
+        {/* Séries */}
+        {hasSeries && (
+          <div ref={seriesRef} className="scroll-mt-40 space-y-3">
+            <h3 className="text-[#6B7280] text-sm uppercase tracking-wider">Séries</h3>
+            {analysis.sets.map((set, si) => (
+              <div key={si} className="bg-[#161616] border border-[#262626] rounded-xl p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-white font-semibold">
+                    {analysis.sets.length > 1 ? `Série ${si + 1} — ` : ''}{set.reps}×{set.effortLabel}
+                  </span>
+                  <span className="text-[#E8FF47] font-mono text-sm">{set.avgEffortPace}/km moy.</span>
+                </div>
+                <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(72px, 1fr))' }}>
+                  {set.efforts.map((lap, ri) => {
+                    const rec = set.recoveries[ri]
+                    return (
+                      <div key={ri} className="flex flex-col items-center gap-1">
+                        <div className="bg-[#E8FF47]/10 border border-[#E8FF47]/20 rounded-lg p-2 w-full text-center">
+                          <p className="text-[#E8FF47] font-mono text-xs font-bold">{lap.avgPace}</p>
+                          <p className="text-[#6B7280] text-[10px]">
+                            {set.isTimeBased ? formatDuration(lap.timerTime) : `${(lap.distance * 1000).toFixed(0)}m`}
+                          </p>
+                        </div>
+                        {rec && (
+                          <div className="bg-blue-500/10 border border-blue-500/20 rounded px-1 py-0.5 w-full text-center">
+                            <p className="text-blue-400 text-[10px]">{formatDuration(rec.timerTime)}</p>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Graphique */}
+        <div ref={graphRef} className="scroll-mt-40 bg-[#161616] border border-[#262626] rounded-xl p-4">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-[#6B7280] text-sm uppercase tracking-wider">Vitesse par lap</h3>
+            <div className="flex items-center gap-4 text-xs text-[#4B5563]">
+              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-[#E8FF47]" />Effort</span>
+              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-blue-400" />Récup</span>
+              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-[#4B5563]" />Facile</span>
+            </div>
+          </div>
+          <LapChart laps={analysis.laps} avgEffortPaceSeconds={analysis.avgEffortPaceSeconds} />
+        </div>
+
+        {/* Zones FC — repliées par défaut */}
+        <div ref={zonesRef} className="scroll-mt-40 bg-[#161616] border border-[#262626] rounded-xl overflow-hidden">
+          <button
+            onClick={() => setShowZones(v => !v)}
+            className="w-full flex items-center justify-between px-4 py-3 hover:bg-[#1A1A1A] transition-colors"
+          >
+            <h3 className="text-[#6B7280] text-sm uppercase tracking-wider">Zones FC</h3>
+            <span className="text-[#4B5563] text-xs">{showZones ? '↑ Masquer' : '↓ Afficher'}</span>
+          </button>
+          {showZones && (
+            <div className="border-t border-[#1A1A1A] px-4 pb-4 space-y-4">
+              <div className="pt-4">
+                <HRZoneSettings config={hrZoneConfig} onSave={onSaveHrZoneConfig} />
+              </div>
+              {hrZoneConfig && <ZoneDistribution laps={analysis.laps} config={hrZoneConfig} />}
             </div>
           )}
-          <h2 className="text-3xl font-bold text-white">
-            {analysis.structure || 'Séance de course'}
-          </h2>
-          {analysis.summary && (
-            <p className="text-[#6B7280] text-sm italic mt-1">{analysis.summary}</p>
+        </div>
+
+        {/* Laps — repliés par défaut */}
+        <div ref={lapsRef} className="scroll-mt-40 bg-[#161616] border border-[#262626] rounded-xl overflow-hidden">
+          <button
+            onClick={() => setShowLaps(v => !v)}
+            className="w-full flex items-center justify-between px-4 py-3 hover:bg-[#1A1A1A] transition-colors"
+          >
+            <h3 className="text-[#6B7280] text-sm uppercase tracking-wider">
+              Laps · {analysis.laps.length}
+            </h3>
+            <span className="text-[#4B5563] text-xs">{showLaps ? '↑ Masquer' : '↓ Afficher'}</span>
+          </button>
+          {showLaps && (
+            <div className="border-t border-[#1A1A1A] overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-[#1A1A1A]">
+                    {['#', 'Type', 'Zone', 'Distance', 'Allure / Durée', 'Δ Allure', 'FC', 'Cadence', 'Temps actif'].map(h => (
+                      <th key={h} className="py-2 px-3 text-left text-[#4B5563] text-xs uppercase tracking-wider font-normal">
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {groupLapsByPhase(analysis.laps).flatMap((group, gi) => {
+                    const stats = phaseStats(group.laps)
+                    const header = (
+                      <tr key={`h${gi}`} className="bg-[#111111]">
+                        <td colSpan={9} className="py-1.5 px-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[#6B7280] text-xs uppercase tracking-wider font-medium">
+                              {GROUP_LABEL[group.category] ?? group.category}
+                            </span>
+                            {stats && (
+                              <span className="text-[#4B5563] text-xs font-mono">
+                                {formatDistance(stats.totalDist)}
+                                {stats.paceSeconds > 0 ? ` · ${formatPace(stats.paceSeconds)}/km` : ''}
+                                {stats.avgHR > 0 ? ` · ${stats.avgHR} bpm` : ''}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                    const rows = group.laps.map(lap => (
+                      <LapRow
+                        key={lap.index}
+                        lap={lap}
+                        zone={lapZoneMap.get(lap.index) ?? null}
+                        avgEffortPaceSeconds={analysis.avgEffortPaceSeconds}
+                      />
+                    ))
+                    return [header, ...rows]
+                  })}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setShowModal(true)}
-            className="text-xs px-3 py-1.5 rounded-lg border border-[#E8FF47]/30 text-[#E8FF47] hover:bg-[#E8FF47]/10 transition-colors"
-          >
-            Exporter
-          </button>
-          <button
-            onClick={onReset}
-            className="text-[#4B5563] hover:text-white text-sm transition-colors flex items-center gap-1"
-          >
-            ← Nouvelle séance
-          </button>
-        </div>
+
       </div>
 
       {/* Export modal */}
@@ -494,7 +724,6 @@ function AnalysisResult({ analysis, hrZoneConfig, onSaveHrZoneConfig, onReset }:
                 ✕
               </button>
             </div>
-
             <div className="flex flex-wrap gap-2">
               {([1, 2, 3, 4, 5] as ShareFormat[]).map(f => (
                 <button
@@ -510,7 +739,6 @@ function AnalysisResult({ analysis, hrZoneConfig, onSaveHrZoneConfig, onReset }:
                 </button>
               ))}
             </div>
-
             {(() => {
               const { w, h } = FORMAT_SIZES[shareFormat]
               const maxW = 460
@@ -533,7 +761,6 @@ function AnalysisResult({ analysis, hrZoneConfig, onSaveHrZoneConfig, onReset }:
                 </div>
               )
             })()}
-
             <button
               onClick={handleExport}
               disabled={exporting}
@@ -545,172 +772,13 @@ function AnalysisResult({ analysis, hrZoneConfig, onSaveHrZoneConfig, onReset }:
         </div>
       )}
 
-      {/* div off-screen pour html2canvas (résolution pleine) */}
+      {/* div off-screen pour html2canvas */}
       <div style={{ position: 'fixed', top: -9999, left: -9999, pointerEvents: 'none', zIndex: -1 }} aria-hidden="true">
         <div ref={cardRef}>
           <ShareCard analysis={analysis} format={shareFormat} />
         </div>
       </div>
-
-      {/* HR Zone settings */}
-      <HRZoneSettings config={hrZoneConfig} onSave={onSaveHrZoneConfig} />
-
-      {/* Zone distribution */}
-      {hrZoneConfig && <ZoneDistribution laps={analysis.laps} config={hrZoneConfig} />}
-
-      {/* Summary cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatCard
-          label="Distance totale"
-          value={formatDistance(analysis.totalDistance)}
-        />
-        <StatCard
-          label="Durée totale"
-          value={formatDuration(analysis.totalDuration)}
-        />
-        <StatCard
-          label="Allure moyenne"
-          value={analysis.totalDistance > 0
-            ? `${formatPace(analysis.activeTime / analysis.totalDistance)}/km`
-            : '--:--'}
-        />
-        <StatCard
-          label="FC moyenne"
-          value={analysis.avgHR > 0 ? `${analysis.avgHR} bpm` : '—'}
-        />
-      </div>
-
-      {/* Phase KPIs */}
-      {(() => {
-        const phases = (['warmup', 'effort', 'recovery', 'cooldown'] as const)
-          .map(type => ({ type, laps: analysis.laps.filter(l => l.type === type) }))
-          .filter(p => p.laps.length > 0)
-        return phases.length > 0 ? (
-          <div className="space-y-3">
-            <h3 className="text-[#6B7280] text-sm uppercase tracking-wider">Phases</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {phases.map(({ type, laps }) => (
-                <PhaseCard key={type} type={type} laps={laps} />
-              ))}
-            </div>
-          </div>
-        ) : null
-      })()}
-
-      {/* Per-set detail */}
-      {analysis.sets.length > 0 && (
-        <div className="space-y-3">
-          <h3 className="text-[#6B7280] text-sm uppercase tracking-wider">Séries</h3>
-          {analysis.sets.map((set, si) => (
-            <div key={si} className="bg-[#161616] border border-[#262626] rounded-xl p-4">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-white font-semibold">
-                  {analysis.sets.length > 1 ? `Série ${si + 1} — ` : ''}{set.reps}×{set.effortLabel}
-                </span>
-                <span className="text-[#E8FF47] font-mono text-sm">{set.avgEffortPace}/km moy.</span>
-              </div>
-              <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(72px, 1fr))' }}>
-                {set.efforts.map((lap, ri) => {
-                  const rec = set.recoveries[ri]
-                  return (
-                    <div key={ri} className="flex flex-col items-center gap-1">
-                      <div className="bg-[#E8FF47]/10 border border-[#E8FF47]/20 rounded-lg p-2 w-full text-center">
-                        <p className="text-[#E8FF47] font-mono text-xs font-bold">{lap.avgPace}</p>
-                        <p className="text-[#6B7280] text-[10px]">
-                          {set.isTimeBased ? formatDuration(lap.timerTime) : `${(lap.distance * 1000).toFixed(0)}m`}
-                        </p>
-                      </div>
-                      {rec && (
-                        <div className="bg-blue-500/10 border border-blue-500/20 rounded px-1 py-0.5 w-full text-center">
-                          <p className="text-blue-400 text-[10px]">{formatDuration(rec.timerTime)}</p>
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Lap chart */}
-      <div className="bg-[#161616] border border-[#262626] rounded-xl p-4">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-[#6B7280] text-sm uppercase tracking-wider">Vitesse par lap</h3>
-          <div className="flex items-center gap-4 text-xs text-[#4B5563]">
-            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-[#E8FF47]" />Effort</span>
-            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-blue-400" />Récup</span>
-            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-[#4B5563]" />Facile</span>
-          </div>
-        </div>
-        <LapChart laps={analysis.laps} avgEffortPaceSeconds={analysis.avgEffortPaceSeconds} />
-      </div>
-
-      {/* GPS map */}
-      {analysis.gpsTrack.length >= 2 && (
-        <div className="bg-[#161616] border border-[#262626] rounded-xl overflow-hidden">
-          <div className="p-4 border-b border-[#262626]">
-            <h3 className="text-[#6B7280] text-sm uppercase tracking-wider">Tracé GPS</h3>
-          </div>
-          <div className="p-2">
-            <MapView points={analysis.gpsTrack} />
-          </div>
-        </div>
-      )}
-
-      {/* Lap table */}
-      <div className="bg-[#161616] border border-[#262626] rounded-xl overflow-hidden">
-        <div className="p-4 border-b border-[#262626]">
-          <h3 className="text-[#6B7280] text-sm uppercase tracking-wider">Détail des laps</h3>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-[#1A1A1A]">
-                {['#', 'Type', 'Zone', 'Distance', 'Allure / Durée', 'Δ Allure', 'FC', 'Cadence', 'Temps actif'].map(h => (
-                  <th key={h} className="py-2 px-3 text-left text-[#4B5563] text-xs uppercase tracking-wider font-normal">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {groupLapsByPhase(analysis.laps).flatMap((group, gi) => {
-                const stats = phaseStats(group.laps)
-                const header = (
-                  <tr key={`h${gi}`} className="bg-[#111111]">
-                    <td colSpan={9} className="py-1.5 px-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[#6B7280] text-xs uppercase tracking-wider font-medium">
-                          {GROUP_LABEL[group.category] ?? group.category}
-                        </span>
-                        {stats && (
-                          <span className="text-[#4B5563] text-xs font-mono">
-                            {formatDistance(stats.totalDist)}
-                            {stats.paceSeconds > 0 ? ` · ${formatPace(stats.paceSeconds)}/km` : ''}
-                            {stats.avgHR > 0 ? ` · ${stats.avgHR} bpm` : ''}
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                )
-                const rows = group.laps.map(lap => (
-                  <LapRow
-                    key={lap.index}
-                    lap={lap}
-                    zone={lapZoneMap.get(lap.index) ?? null}
-                    avgEffortPaceSeconds={analysis.avgEffortPaceSeconds}
-                  />
-                ))
-                return [header, ...rows]
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+    </>
   )
 }
 
@@ -733,8 +801,8 @@ export default function AnalysisDashboard() {
 
   return (
     <div className="min-h-screen bg-[#0C0C0C]">
-      {/* Navbar */}
-      <nav className="border-b border-[#1A1A1A] px-6 py-4 flex items-center gap-3">
+      {/* Navbar sticky */}
+      <nav className="sticky top-0 z-30 bg-[#0C0C0C] border-b border-[#1A1A1A] px-6 py-4 flex items-center gap-3">
         <div className="w-7 h-7 rounded-md bg-[#E8FF47] flex items-center justify-center">
           <span className="text-black text-xs font-black">B</span>
         </div>
@@ -743,9 +811,8 @@ export default function AnalysisDashboard() {
         <span className="text-[#4B5563] text-sm">Running</span>
       </nav>
 
-      {/* Content */}
-      <main className="max-w-5xl mx-auto px-6 py-10">
-        {!analysis ? (
+      {!analysis ? (
+        <main className="max-w-5xl mx-auto px-6 py-10">
           <div className="space-y-8">
             <div>
               <h1 className="text-3xl font-bold text-white">Analyse de séance</h1>
@@ -755,10 +822,15 @@ export default function AnalysisDashboard() {
             </div>
             <UploadZone onAnalysis={setAnalysis} />
           </div>
-        ) : (
-          <AnalysisResult analysis={analysis} hrZoneConfig={hrZoneConfig} onSaveHrZoneConfig={saveHrZoneConfig} onReset={() => setAnalysis(null)} />
-        )}
-      </main>
+        </main>
+      ) : (
+        <AnalysisResult
+          analysis={analysis}
+          hrZoneConfig={hrZoneConfig}
+          onSaveHrZoneConfig={saveHrZoneConfig}
+          onReset={() => setAnalysis(null)}
+        />
+      )}
     </div>
   )
 }
