@@ -458,7 +458,7 @@ function AnalysisResult({ analysis, hrZoneConfig, onSaveHrZoneConfig, onReset }:
   return (
     <>
       {/* ── Sticky session header ── */}
-      <div className="sticky top-[53px] z-20 bg-[#0C0C0C]/95 backdrop-blur-sm border-b border-[#1A1A1A]">
+      <div className="sticky top-[61px] z-20 bg-[#0C0C0C]/95 backdrop-blur-sm border-b border-[#1A1A1A]">
         <div className="max-w-5xl mx-auto px-6 py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
             {analysis.workoutType === 'intervals' && (
@@ -493,7 +493,7 @@ function AnalysisResult({ analysis, hrZoneConfig, onSaveHrZoneConfig, onReset }:
       </div>
 
       {/* ── Section nav ── */}
-      <div className="sticky top-[101px] z-10 bg-[#0C0C0C]/90 backdrop-blur-sm border-b border-[#1A1A1A]">
+      <div className="sticky top-[116px] z-10 bg-[#0C0C0C]/90 backdrop-blur-sm border-b border-[#1A1A1A]">
         <div className="max-w-5xl mx-auto px-6">
           <div className="flex gap-1 overflow-x-auto py-2">
             {hasSeries && (
@@ -566,7 +566,7 @@ function AnalysisResult({ analysis, hrZoneConfig, onSaveHrZoneConfig, onReset }:
 
         {/* Carte GPS — remontée après le hero */}
         {hasGps && (
-          <div className="bg-[#161616] border border-[#262626] rounded-xl overflow-hidden">
+          <div className="bg-[#161616] border border-[#262626] rounded-xl overflow-hidden isolate">
             <div className="p-4 border-b border-[#262626]">
               <h3 className="text-[#6B7280] text-sm uppercase tracking-wider">Tracé GPS</h3>
             </div>
@@ -578,7 +578,7 @@ function AnalysisResult({ analysis, hrZoneConfig, onSaveHrZoneConfig, onReset }:
 
         {/* Séries */}
         {hasSeries && (
-          <div ref={seriesRef} className="scroll-mt-40 space-y-3">
+          <div ref={seriesRef} className="scroll-mt-44 space-y-3">
             <h3 className="text-[#6B7280] text-sm uppercase tracking-wider">Séries</h3>
             {analysis.sets.map((set, si) => (
               <div key={si} className="bg-[#161616] border border-[#262626] rounded-xl p-4">
@@ -614,7 +614,7 @@ function AnalysisResult({ analysis, hrZoneConfig, onSaveHrZoneConfig, onReset }:
         )}
 
         {/* Graphique */}
-        <div ref={graphRef} className="scroll-mt-40 bg-[#161616] border border-[#262626] rounded-xl p-4">
+        <div ref={graphRef} className="scroll-mt-44 bg-[#161616] border border-[#262626] rounded-xl p-4">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-[#6B7280] text-sm uppercase tracking-wider">Vitesse par lap</h3>
             <div className="flex items-center gap-4 text-xs text-[#4B5563]">
@@ -627,7 +627,7 @@ function AnalysisResult({ analysis, hrZoneConfig, onSaveHrZoneConfig, onReset }:
         </div>
 
         {/* Zones FC — repliées par défaut */}
-        <div ref={zonesRef} className="scroll-mt-40 bg-[#161616] border border-[#262626] rounded-xl overflow-hidden">
+        <div ref={zonesRef} className="scroll-mt-44 bg-[#161616] border border-[#262626] rounded-xl overflow-hidden">
           <button
             onClick={() => setShowZones(v => !v)}
             className="w-full flex items-center justify-between px-4 py-3 hover:bg-[#1A1A1A] transition-colors"
@@ -646,7 +646,7 @@ function AnalysisResult({ analysis, hrZoneConfig, onSaveHrZoneConfig, onReset }:
         </div>
 
         {/* Laps — repliés par défaut */}
-        <div ref={lapsRef} className="scroll-mt-40 bg-[#161616] border border-[#262626] rounded-xl overflow-hidden">
+        <div ref={lapsRef} className="scroll-mt-44 bg-[#161616] border border-[#262626] rounded-xl overflow-hidden">
           <button
             onClick={() => setShowLaps(v => !v)}
             className="w-full flex items-center justify-between px-4 py-3 hover:bg-[#1A1A1A] transition-colors"
