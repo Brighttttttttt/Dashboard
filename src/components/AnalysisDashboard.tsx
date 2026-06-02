@@ -610,14 +610,7 @@ function AnalysisResult({ analysis, hrZoneConfig, onSaveHrZoneConfig, onReset }:
         {/* ── Graphique ── */}
         {activeTab === 'graphique' && (
           <div className="bg-[#161616] border border-[#262626] rounded-xl p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-[#6B7280] text-sm uppercase tracking-wider">Vitesse par lap</h3>
-              <div className="flex items-center gap-4 text-xs text-[#4B5563]">
-                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-[#E8FF47]" />Effort</span>
-                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-blue-400" />Récup</span>
-                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-[#4B5563]" />Facile</span>
-              </div>
-            </div>
+            <h3 className="text-[#6B7280] text-sm uppercase tracking-wider mb-4">Vitesse par lap</h3>
             <LapChart laps={analysis.laps} avgEffortPaceSeconds={analysis.avgEffortPaceSeconds} />
           </div>
         )}

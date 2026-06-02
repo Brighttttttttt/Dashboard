@@ -76,11 +76,16 @@ export default function LapChart({ laps, avgEffortPaceSeconds }: Props) {
   const avgEffortSpeed = avgEffortPaceSeconds > 0 ? 3600 / avgEffortPaceSeconds : undefined
   const hasHR = data.some(d => d.hr !== null)
 
+  const lapsWithHR = data.filter(d => d.hr !== null)
+  const avgHR = lapsWithHR.length > 0
+    ? Math.round(lapsWithHR.reduce((s, d) => s + (d.hr ?? 0), 0) / lapsWithHR.length)
+    : null
+
   return (
     <div className="w-full">
       <div className="w-full h-64">
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={data} margin={{ top: 8, right: hasHR ? 40 : 8, left: -16, bottom: 0 }}>
+          <ComposedChart data={data} margin={{ top: 8, right: hasHR ? 40 : 8, left: 8, bottom: 0 }}>
             <XAxis
               dataKey="index"
               tickFormatter={(v) => `L${v + 1}`}
@@ -94,7 +99,7 @@ export default function LapChart({ laps, avgEffortPaceSeconds }: Props) {
               tick={{ fill: '#6B7280', fontSize: 11 }}
               axisLine={false}
               tickLine={false}
-              label={{ value: 'km/h', angle: -90, position: 'insideLeft', fill: '#4B5563', fontSize: 11, dx: 12 }}
+              width={32}
             />
             {hasHR && (
               <YAxis
@@ -104,7 +109,7 @@ export default function LapChart({ laps, avgEffortPaceSeconds }: Props) {
                 tick={{ fill: '#F87171', fontSize: 11 }}
                 axisLine={false}
                 tickLine={false}
-                label={{ value: 'bpm', angle: 90, position: 'insideRight', fill: '#F87171', fontSize: 11, dx: -4 }}
+                width={36}
               />
             )}
             <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
@@ -115,6 +120,15 @@ export default function LapChart({ laps, avgEffortPaceSeconds }: Props) {
                 stroke="#E8FF47"
                 strokeDasharray="4 4"
                 strokeOpacity={0.6}
+              />
+            )}
+            {hasHR && avgHR && (
+              <ReferenceLine
+                yAxisId="hr"
+                y={avgHR}
+                stroke="#F87171"
+                strokeDasharray="4 4"
+                strokeOpacity={0.45}
               />
             )}
             <Bar yAxisId="speed" dataKey="speed" radius={[3, 3, 0, 0]} maxBarSize={32}>
@@ -144,18 +158,46 @@ export default function LapChart({ laps, avgEffortPaceSeconds }: Props) {
           </ComposedChart>
         </ResponsiveContainer>
       </div>
-      {hasHR && (
-        <div className="flex gap-4 mt-2 px-2 text-xs text-[#6B7280]">
+
+      {/* Légende */}
+      <div className="flex flex-wrap gap-x-5 gap-y-1.5 mt-3 px-1 text-xs text-[#6B7280]">
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block w-3 h-2.5 rounded-sm shrink-0" style={{ background: 'linear-gradient(to right, #22C55E, #EF4444)' }} />
+          Effort
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block w-3 h-2.5 rounded-sm bg-[#60A5FA] shrink-0" />
+          Récup
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block w-3 h-2.5 rounded-sm bg-[#4B5563] shrink-0" />
+          Facile
+        </span>
+        {avgEffortSpeed && (
           <span className="flex items-center gap-1.5">
-            <span className="inline-block w-3 h-3 rounded-sm bg-[#E8FF47]" />
-            Allure (km/h)
+            <svg width="18" height="8" aria-hidden="true" className="shrink-0">
+              <line x1="0" y1="4" x2="18" y2="4" stroke="#E8FF47" strokeWidth="1.5" strokeDasharray="3 2" opacity="0.7"/>
+            </svg>
+            Allure moy.
           </span>
+        )}
+        {hasHR && (
           <span className="flex items-center gap-1.5">
-            <span className="inline-block w-3 h-0.5 bg-[#F87171]" />
-            FC (bpm)
+            <svg width="18" height="8" aria-hidden="true" className="shrink-0">
+              <line x1="0" y1="4" x2="18" y2="4" stroke="#F87171" strokeWidth="1.5"/>
+            </svg>
+            FC
           </span>
-        </div>
-      )}
+        )}
+        {hasHR && avgHR && (
+          <span className="flex items-center gap-1.5">
+            <svg width="18" height="8" aria-hidden="true" className="shrink-0">
+              <line x1="0" y1="4" x2="18" y2="4" stroke="#F87171" strokeWidth="1.5" strokeDasharray="3 2" opacity="0.5"/>
+            </svg>
+            FC moy. ({avgHR} bpm)
+          </span>
+        )}
+      </div>
     </div>
   )
 }
