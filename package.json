@@ -14,7 +14,7 @@
     "fit-file-parser": "^3.0.1",
     "html2canvas": "^1.4.1",
     "leaflet": "^1.9.4",
-    "next": "^16.2.6",
+    "next": "^16.2.7",
     "react": "^19",
     "react-dom": "^19",
     "react-leaflet": "^5.0.0",
