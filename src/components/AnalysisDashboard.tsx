@@ -417,16 +417,7 @@ function AnalysisResult({ analysis, hrZoneConfig, onSaveHrZoneConfig, onReset }:
   const [showModal, setShowModal] = useState(false)
   const [exporting, setExporting] = useState(false)
   const cardRef = useRef<HTMLDivElement>(null)
-  const [showZones, setShowZones] = useState(false)
-  const [showLaps, setShowLaps] = useState(false)
-  const seriesRef = useRef<HTMLDivElement>(null)
-  const graphRef = useRef<HTMLDivElement>(null)
-  const zonesRef = useRef<HTMLDivElement>(null)
-  const lapsRef = useRef<HTMLDivElement>(null)
-
-  const scrollTo = (ref: React.RefObject<HTMLDivElement | null>) => {
-    ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
+  const [activeTab, setActiveTab] = useState<'resume' | 'graphique' | 'zones' | 'laps'>('resume')
 
   const handleExport = async () => {
     if (!cardRef.current) return
@@ -493,36 +484,28 @@ function AnalysisResult({ analysis, hrZoneConfig, onSaveHrZoneConfig, onReset }:
         </div>
       </div>
 
-      {/* ── Section nav ── */}
+      {/* ── Tab bar ── */}
       <div className="sticky top-[116px] z-10 bg-[#0C0C0C]/90 backdrop-blur-sm border-b border-[#1A1A1A]">
         <div className="max-w-5xl mx-auto px-6">
-          <div className="flex gap-1 overflow-x-auto py-2">
-            {hasSeries && (
+          <div className="flex overflow-x-auto">
+            {([
+              { id: 'resume', label: 'Résumé' },
+              { id: 'graphique', label: 'Graphique' },
+              { id: 'zones', label: 'Zones FC' },
+              { id: 'laps', label: `Laps · ${analysis.laps.length}` },
+            ] as const).map(({ id, label }) => (
               <button
-                onClick={() => scrollTo(seriesRef)}
-                className="text-xs px-3 py-1.5 rounded-lg text-[#6B7280] hover:text-white hover:bg-[#1A1A1A] transition-colors whitespace-nowrap"
+                key={id}
+                onClick={() => setActiveTab(id)}
+                className={`text-xs px-4 py-3 border-b-2 transition-colors whitespace-nowrap ${
+                  activeTab === id
+                    ? 'text-[#E8FF47] border-[#E8FF47]'
+                    : 'text-[#6B7280] border-transparent hover:text-white'
+                }`}
               >
-                Séries
+                {label}
               </button>
-            )}
-            <button
-              onClick={() => scrollTo(graphRef)}
-              className="text-xs px-3 py-1.5 rounded-lg text-[#6B7280] hover:text-white hover:bg-[#1A1A1A] transition-colors whitespace-nowrap"
-            >
-              Graphique
-            </button>
-            <button
-              onClick={() => { setShowZones(true); setTimeout(() => scrollTo(zonesRef), 50) }}
-              className="text-xs px-3 py-1.5 rounded-lg text-[#6B7280] hover:text-white hover:bg-[#1A1A1A] transition-colors whitespace-nowrap"
-            >
-              Zones FC
-            </button>
-            <button
-              onClick={() => { setShowLaps(true); setTimeout(() => scrollTo(lapsRef), 50) }}
-              className="text-xs px-3 py-1.5 rounded-lg text-[#6B7280] hover:text-white hover:bg-[#1A1A1A] transition-colors whitespace-nowrap"
-            >
-              Laps
-            </button>
+            ))}
           </div>
         </div>
       </div>
@@ -530,135 +513,121 @@ function AnalysisResult({ analysis, hrZoneConfig, onSaveHrZoneConfig, onReset }:
       {/* ── Contenu principal ── */}
       <div className="max-w-5xl mx-auto px-6 py-8 space-y-8">
 
-        {/* Hero : résumé + 4 stats */}
-        <div className="space-y-4">
-          {analysis.summary && (
-            <p className="text-[#6B7280] text-sm italic">{analysis.summary}</p>
-          )}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <StatCard label="Distance totale" value={formatDistance(analysis.totalDistance)} />
-            <StatCard label="Durée totale" value={formatDuration(analysis.totalDuration)} />
-            <StatCard
-              label="Allure moyenne"
-              value={analysis.totalDistance > 0
-                ? `${formatPace(analysis.activeTime / analysis.totalDistance)}/km`
-                : '--:--'}
-            />
-            <StatCard label="FC moyenne" value={analysis.avgHR > 0 ? `${analysis.avgHR} bpm` : '—'} />
-          </div>
-        </div>
-
-        {/* Phases */}
-        {(() => {
-          const phases = (['warmup', 'effort', 'recovery', 'cooldown'] as const)
-            .map(type => ({ type, laps: analysis.laps.filter(l => l.type === type) }))
-            .filter(p => p.laps.length > 0)
-          return phases.length > 0 ? (
-            <div className="space-y-3">
-              <h3 className="text-[#6B7280] text-sm uppercase tracking-wider">Phases</h3>
+        {/* ── Résumé ── */}
+        {activeTab === 'resume' && (
+          <>
+            <div className="space-y-4">
+              {analysis.summary && (
+                <p className="text-[#6B7280] text-sm italic">{analysis.summary}</p>
+              )}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {phases.map(({ type, laps }) => (
-                  <PhaseCard key={type} type={type} laps={laps} />
+                <StatCard label="Distance totale" value={formatDistance(analysis.totalDistance)} />
+                <StatCard label="Durée totale" value={formatDuration(analysis.totalDuration)} />
+                <StatCard
+                  label="Allure moyenne"
+                  value={analysis.totalDistance > 0
+                    ? `${formatPace(analysis.activeTime / analysis.totalDistance)}/km`
+                    : '--:--'}
+                />
+                <StatCard label="FC moyenne" value={analysis.avgHR > 0 ? `${analysis.avgHR} bpm` : '—'} />
+              </div>
+            </div>
+
+            {(() => {
+              const phases = (['warmup', 'effort', 'recovery', 'cooldown'] as const)
+                .map(type => ({ type, laps: analysis.laps.filter(l => l.type === type) }))
+                .filter(p => p.laps.length > 0)
+              return phases.length > 0 ? (
+                <div className="space-y-3">
+                  <h3 className="text-[#6B7280] text-sm uppercase tracking-wider">Phases</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {phases.map(({ type, laps }) => (
+                      <PhaseCard key={type} type={type} laps={laps} />
+                    ))}
+                  </div>
+                </div>
+              ) : null
+            })()}
+
+            {hasGps && (
+              <div className="bg-[#161616] border border-[#262626] rounded-xl overflow-hidden isolate">
+                <div className="p-4 border-b border-[#262626]">
+                  <h3 className="text-[#6B7280] text-sm uppercase tracking-wider">Tracé GPS</h3>
+                </div>
+                <div className="p-2">
+                  <MapView points={analysis.gpsTrack} />
+                </div>
+              </div>
+            )}
+
+            {hasSeries && (
+              <div className="space-y-3">
+                <h3 className="text-[#6B7280] text-sm uppercase tracking-wider">Séries</h3>
+                {analysis.sets.map((set, si) => (
+                  <div key={si} className="bg-[#161616] border border-[#262626] rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-white font-semibold">
+                        {analysis.sets.length > 1 ? `Série ${si + 1} — ` : ''}{set.reps}×{set.effortLabel}
+                      </span>
+                      <span className="text-[#E8FF47] font-mono text-sm">{set.avgEffortPace}/km moy.</span>
+                    </div>
+                    <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(72px, 1fr))' }}>
+                      {set.efforts.map((lap, ri) => {
+                        const rec = set.recoveries[ri]
+                        return (
+                          <div key={ri} className="flex flex-col items-center gap-1">
+                            <div className="bg-[#E8FF47]/10 border border-[#E8FF47]/20 rounded-lg p-2 w-full text-center">
+                              <p className="text-[#E8FF47] font-mono text-xs font-bold">{lap.avgPace}</p>
+                              <p className="text-[#6B7280] text-[10px]">
+                                {set.isTimeBased ? formatDuration(lap.timerTime) : `${(lap.distance * 1000).toFixed(0)}m`}
+                              </p>
+                            </div>
+                            {rec && (
+                              <div className="bg-blue-500/10 border border-blue-500/20 rounded px-1 py-0.5 w-full text-center">
+                                <p className="text-blue-400 text-[10px]">{formatDuration(rec.timerTime)}</p>
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
                 ))}
               </div>
-            </div>
-          ) : null
-        })()}
+            )}
+          </>
+        )}
 
-        {/* Carte GPS — remontée après le hero */}
-        {hasGps && (
-          <div className="bg-[#161616] border border-[#262626] rounded-xl overflow-hidden isolate">
-            <div className="p-4 border-b border-[#262626]">
-              <h3 className="text-[#6B7280] text-sm uppercase tracking-wider">Tracé GPS</h3>
+        {/* ── Graphique ── */}
+        {activeTab === 'graphique' && (
+          <div className="bg-[#161616] border border-[#262626] rounded-xl p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-[#6B7280] text-sm uppercase tracking-wider">Vitesse par lap</h3>
+              <div className="flex items-center gap-4 text-xs text-[#4B5563]">
+                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-[#E8FF47]" />Effort</span>
+                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-blue-400" />Récup</span>
+                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-[#4B5563]" />Facile</span>
+              </div>
             </div>
-            <div className="p-2">
-              <MapView points={analysis.gpsTrack} />
-            </div>
+            <LapChart laps={analysis.laps} avgEffortPaceSeconds={analysis.avgEffortPaceSeconds} />
           </div>
         )}
 
-        {/* Séries */}
-        {hasSeries && (
-          <div ref={seriesRef} className="scroll-mt-44 space-y-3">
-            <h3 className="text-[#6B7280] text-sm uppercase tracking-wider">Séries</h3>
-            {analysis.sets.map((set, si) => (
-              <div key={si} className="bg-[#161616] border border-[#262626] rounded-xl p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-white font-semibold">
-                    {analysis.sets.length > 1 ? `Série ${si + 1} — ` : ''}{set.reps}×{set.effortLabel}
-                  </span>
-                  <span className="text-[#E8FF47] font-mono text-sm">{set.avgEffortPace}/km moy.</span>
-                </div>
-                <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(72px, 1fr))' }}>
-                  {set.efforts.map((lap, ri) => {
-                    const rec = set.recoveries[ri]
-                    return (
-                      <div key={ri} className="flex flex-col items-center gap-1">
-                        <div className="bg-[#E8FF47]/10 border border-[#E8FF47]/20 rounded-lg p-2 w-full text-center">
-                          <p className="text-[#E8FF47] font-mono text-xs font-bold">{lap.avgPace}</p>
-                          <p className="text-[#6B7280] text-[10px]">
-                            {set.isTimeBased ? formatDuration(lap.timerTime) : `${(lap.distance * 1000).toFixed(0)}m`}
-                          </p>
-                        </div>
-                        {rec && (
-                          <div className="bg-blue-500/10 border border-blue-500/20 rounded px-1 py-0.5 w-full text-center">
-                            <p className="text-blue-400 text-[10px]">{formatDuration(rec.timerTime)}</p>
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            ))}
+        {/* ── Zones FC ── */}
+        {activeTab === 'zones' && (
+          <div className="space-y-4">
+            <HRZoneSettings config={hrZoneConfig} onSave={onSaveHrZoneConfig} />
+            {hrZoneConfig && <ZoneDistribution laps={analysis.laps} config={hrZoneConfig} />}
           </div>
         )}
 
-        {/* Graphique */}
-        <div ref={graphRef} className="scroll-mt-44 bg-[#161616] border border-[#262626] rounded-xl p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-[#6B7280] text-sm uppercase tracking-wider">Vitesse par lap</h3>
-            <div className="flex items-center gap-4 text-xs text-[#4B5563]">
-              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-[#E8FF47]" />Effort</span>
-              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-blue-400" />Récup</span>
-              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-[#4B5563]" />Facile</span>
+        {/* ── Laps ── */}
+        {activeTab === 'laps' && (
+          <div className="bg-[#161616] border border-[#262626] rounded-xl overflow-hidden">
+            <div className="px-4 py-3 border-b border-[#1A1A1A]">
+              <h3 className="text-[#6B7280] text-sm uppercase tracking-wider">Laps · {analysis.laps.length}</h3>
             </div>
-          </div>
-          <LapChart laps={analysis.laps} avgEffortPaceSeconds={analysis.avgEffortPaceSeconds} />
-        </div>
-
-        {/* Zones FC — repliées par défaut */}
-        <div ref={zonesRef} className="scroll-mt-44 bg-[#161616] border border-[#262626] rounded-xl overflow-hidden">
-          <button
-            onClick={() => setShowZones(v => !v)}
-            className="w-full flex items-center justify-between px-4 py-3 hover:bg-[#1A1A1A] transition-colors"
-          >
-            <h3 className="text-[#6B7280] text-sm uppercase tracking-wider">Zones FC</h3>
-            <span className="text-[#4B5563] text-xs">{showZones ? '↑ Masquer' : '↓ Afficher'}</span>
-          </button>
-          {showZones && (
-            <div className="border-t border-[#1A1A1A] px-4 pb-4 space-y-4">
-              <div className="pt-4">
-                <HRZoneSettings config={hrZoneConfig} onSave={onSaveHrZoneConfig} />
-              </div>
-              {hrZoneConfig && <ZoneDistribution laps={analysis.laps} config={hrZoneConfig} />}
-            </div>
-          )}
-        </div>
-
-        {/* Laps — repliés par défaut */}
-        <div ref={lapsRef} className="scroll-mt-44 bg-[#161616] border border-[#262626] rounded-xl overflow-hidden">
-          <button
-            onClick={() => setShowLaps(v => !v)}
-            className="w-full flex items-center justify-between px-4 py-3 hover:bg-[#1A1A1A] transition-colors"
-          >
-            <h3 className="text-[#6B7280] text-sm uppercase tracking-wider">
-              Laps · {analysis.laps.length}
-            </h3>
-            <span className="text-[#4B5563] text-xs">{showLaps ? '↑ Masquer' : '↓ Afficher'}</span>
-          </button>
-          {showLaps && (
-            <div className="border-t border-[#1A1A1A] overflow-x-auto">
+            <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-[#1A1A1A]">
@@ -703,8 +672,8 @@ function AnalysisResult({ analysis, hrZoneConfig, onSaveHrZoneConfig, onReset }:
                 </tbody>
               </table>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
       </div>
 
