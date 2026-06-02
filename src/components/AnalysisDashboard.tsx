@@ -467,7 +467,7 @@ function AnalysisResult({ analysis, hrZoneConfig, onSaveHrZoneConfig, onReset }:
       </div>
 
       {/* ── Tab bar ── */}
-      <div className="sticky top-[116px] z-10 bg-[#0C0C0C]/90 backdrop-blur-sm border-b border-[#1A1A1A]">
+      <div className="sticky top-[110px] z-10 bg-[#0C0C0C]/90 backdrop-blur-sm border-b border-[#1A1A1A]">
         <div className="max-w-5xl mx-auto px-6">
           <div className="flex overflow-x-auto">
             {([
