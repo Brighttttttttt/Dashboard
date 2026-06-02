@@ -414,10 +414,9 @@ function AnalysisResult({ analysis, hrZoneConfig, onSaveHrZoneConfig, onReset }:
   onReset: () => void
 }) {
   const [shareFormat, setShareFormat] = useState<ShareFormat>(1)
-  const [showModal, setShowModal] = useState(false)
   const [exporting, setExporting] = useState(false)
   const cardRef = useRef<HTMLDivElement>(null)
-  const [activeTab, setActiveTab] = useState<'resume' | 'graphique' | 'zones' | 'laps'>('resume')
+  const [activeTab, setActiveTab] = useState<'resume' | 'analyse' | 'graphique' | 'laps' | 'parametres'>('resume')
 
   const handleExport = async () => {
     if (!cardRef.current) return
@@ -450,37 +449,20 @@ function AnalysisResult({ analysis, hrZoneConfig, onSaveHrZoneConfig, onReset }:
     <>
       {/* ── Sticky session header ── */}
       <div className="sticky top-[61px] z-20 bg-[#0C0C0C]/95 backdrop-blur-sm border-b border-[#1A1A1A]">
-        <div className="max-w-5xl mx-auto px-6 py-3 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3 min-w-0">
-            {analysis.workoutType === 'intervals' && (
-              <span className="shrink-0 bg-[#E8FF47]/10 border border-[#E8FF47]/20 rounded-full px-2.5 py-0.5 text-[#E8FF47] text-xs font-medium uppercase tracking-wider">
-                Intervalles
-              </span>
-            )}
-            <span className="text-white font-bold truncate">
-              {analysis.structure || 'Séance de course'}
+        <div className="max-w-5xl mx-auto px-6 py-3 flex items-center gap-3 min-w-0">
+          {analysis.workoutType === 'intervals' && (
+            <span className="shrink-0 bg-[#E8FF47]/10 border border-[#E8FF47]/20 rounded-full px-2.5 py-0.5 text-[#E8FF47] text-xs font-medium uppercase tracking-wider">
+              Intervalles
             </span>
-            {analysis.summary && (
-              <span className="text-[#4B5563] text-sm italic hidden md:block truncate">
-                {analysis.summary}
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              onClick={() => setShowModal(true)}
-              className="text-xs px-3 py-1.5 rounded-lg border border-[#E8FF47]/30 text-[#E8FF47] hover:bg-[#E8FF47]/10 transition-colors"
-            >
-              Exporter
-            </button>
-            <button
-              onClick={onReset}
-              className="text-[#4B5563] hover:text-white text-sm transition-colors whitespace-nowrap"
-            >
-              <span className="hidden sm:inline">← Nouvelle séance</span>
-              <span className="sm:hidden">←</span>
-            </button>
-          </div>
+          )}
+          <span className="text-white font-bold truncate">
+            {analysis.structure || 'Séance de course'}
+          </span>
+          {analysis.summary && (
+            <span className="text-[#4B5563] text-sm italic hidden md:block truncate">
+              {analysis.summary}
+            </span>
+          )}
         </div>
       </div>
 
@@ -490,9 +472,10 @@ function AnalysisResult({ analysis, hrZoneConfig, onSaveHrZoneConfig, onReset }:
           <div className="flex overflow-x-auto">
             {([
               { id: 'resume', label: 'Résumé' },
+              { id: 'analyse', label: 'Analyse' },
               { id: 'graphique', label: 'Graphique' },
-              { id: 'zones', label: 'Zones FC' },
               { id: 'laps', label: `Laps · ${analysis.laps.length}` },
+              { id: 'parametres', label: 'Paramètres' },
             ] as const).map(({ id, label }) => (
               <button
                 key={id}
@@ -533,6 +516,22 @@ function AnalysisResult({ analysis, hrZoneConfig, onSaveHrZoneConfig, onReset }:
               </div>
             </div>
 
+            {hasGps && (
+              <div className="bg-[#161616] border border-[#262626] rounded-xl overflow-hidden isolate">
+                <div className="p-4 border-b border-[#262626]">
+                  <h3 className="text-[#6B7280] text-sm uppercase tracking-wider">Tracé GPS</h3>
+                </div>
+                <div className="p-2">
+                  <MapView points={analysis.gpsTrack} />
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ── Analyse ── */}
+        {activeTab === 'analyse' && (
+          <>
             {(() => {
               const phases = (['warmup', 'effort', 'recovery', 'cooldown'] as const)
                 .map(type => ({ type, laps: analysis.laps.filter(l => l.type === type) }))
@@ -548,17 +547,6 @@ function AnalysisResult({ analysis, hrZoneConfig, onSaveHrZoneConfig, onReset }:
                 </div>
               ) : null
             })()}
-
-            {hasGps && (
-              <div className="bg-[#161616] border border-[#262626] rounded-xl overflow-hidden isolate">
-                <div className="p-4 border-b border-[#262626]">
-                  <h3 className="text-[#6B7280] text-sm uppercase tracking-wider">Tracé GPS</h3>
-                </div>
-                <div className="p-2">
-                  <MapView points={analysis.gpsTrack} />
-                </div>
-              </div>
-            )}
 
             {hasSeries && (
               <div className="space-y-3">
@@ -610,14 +598,6 @@ function AnalysisResult({ analysis, hrZoneConfig, onSaveHrZoneConfig, onReset }:
               </div>
             </div>
             <LapChart laps={analysis.laps} avgEffortPaceSeconds={analysis.avgEffortPaceSeconds} />
-          </div>
-        )}
-
-        {/* ── Zones FC ── */}
-        {activeTab === 'zones' && (
-          <div className="space-y-4">
-            <HRZoneSettings config={hrZoneConfig} onSave={onSaveHrZoneConfig} />
-            {hrZoneConfig && <ZoneDistribution laps={analysis.laps} config={hrZoneConfig} />}
           </div>
         )}
 
@@ -675,72 +655,78 @@ function AnalysisResult({ analysis, hrZoneConfig, onSaveHrZoneConfig, onReset }:
           </div>
         )}
 
-      </div>
+        {/* ── Paramètres ── */}
+        {activeTab === 'parametres' && (
+          <div className="space-y-8">
+            <div className="space-y-4">
+              <h3 className="text-[#6B7280] text-sm uppercase tracking-wider">Zones FC</h3>
+              <HRZoneSettings config={hrZoneConfig} onSave={onSaveHrZoneConfig} />
+              {hrZoneConfig && <ZoneDistribution laps={analysis.laps} config={hrZoneConfig} />}
+            </div>
 
-      {/* Export modal */}
-      {showModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-6"
-          style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)' }}
-          onClick={e => { if (e.target === e.currentTarget) setShowModal(false) }}
-        >
-          <div className="bg-[#161616] border border-[#262626] rounded-2xl p-6 flex flex-col gap-5 w-full max-w-[540px] max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between">
-              <span className="text-white font-semibold">Fiche exportable</span>
+            <div className="space-y-4">
+              <h3 className="text-[#6B7280] text-sm uppercase tracking-wider">Exporter</h3>
+              <div className="bg-[#161616] border border-[#262626] rounded-xl p-4 space-y-4">
+                <div className="flex flex-wrap gap-2">
+                  {([1, 2, 3, 4, 5] as ShareFormat[]).map(f => (
+                    <button
+                      key={f}
+                      onClick={() => setShareFormat(f)}
+                      className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
+                        shareFormat === f
+                          ? 'bg-[#E8FF47]/10 border-[#E8FF47]/30 text-[#E8FF47]'
+                          : 'border-[#262626] text-[#6B7280] hover:border-[#444]'
+                      }`}
+                    >
+                      {FORMAT_LABELS[f]}
+                    </button>
+                  ))}
+                </div>
+                {(() => {
+                  const { w, h } = FORMAT_SIZES[shareFormat]
+                  const maxW = 460
+                  const maxH = 400
+                  const scale = Math.min(maxW / w, maxH / h)
+                  return (
+                    <div className="flex justify-center">
+                      <div style={{
+                        width: Math.round(w * scale),
+                        height: Math.round(h * scale),
+                        overflow: 'hidden',
+                        borderRadius: 12,
+                        flexShrink: 0,
+                        border: '1px solid rgba(255,255,255,0.06)',
+                      }}>
+                        <div style={{ transform: `scale(${scale})`, transformOrigin: 'top left', width: w, height: h }}>
+                          <ShareCard analysis={analysis} format={shareFormat} />
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })()}
+                <button
+                  onClick={handleExport}
+                  disabled={exporting}
+                  className="bg-[#E8FF47] text-black text-sm font-bold px-4 py-2.5 rounded-lg disabled:opacity-50 hover:bg-[#d4e840] transition-colors"
+                >
+                  {exporting ? 'Génération…' : 'Télécharger PNG'}
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-[#6B7280] text-sm uppercase tracking-wider">Session</h3>
               <button
-                onClick={() => setShowModal(false)}
-                className="text-[#4B5563] hover:text-white text-xl leading-none transition-colors"
+                onClick={onReset}
+                className="text-sm px-4 py-2.5 rounded-lg border border-[#262626] text-[#6B7280] hover:border-red-500/50 hover:text-red-400 transition-colors"
               >
-                ✕
+                ← Nouvelle séance
               </button>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {([1, 2, 3, 4, 5] as ShareFormat[]).map(f => (
-                <button
-                  key={f}
-                  onClick={() => setShareFormat(f)}
-                  className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
-                    shareFormat === f
-                      ? 'bg-[#E8FF47]/10 border-[#E8FF47]/30 text-[#E8FF47]'
-                      : 'border-[#262626] text-[#6B7280] hover:border-[#444]'
-                  }`}
-                >
-                  {FORMAT_LABELS[f]}
-                </button>
-              ))}
-            </div>
-            {(() => {
-              const { w, h } = FORMAT_SIZES[shareFormat]
-              const maxW = 460
-              const maxH = 400
-              const scale = Math.min(maxW / w, maxH / h)
-              return (
-                <div className="flex justify-center">
-                  <div style={{
-                    width: Math.round(w * scale),
-                    height: Math.round(h * scale),
-                    overflow: 'hidden',
-                    borderRadius: 12,
-                    flexShrink: 0,
-                    border: '1px solid rgba(255,255,255,0.06)',
-                  }}>
-                    <div style={{ transform: `scale(${scale})`, transformOrigin: 'top left', width: w, height: h }}>
-                      <ShareCard analysis={analysis} format={shareFormat} />
-                    </div>
-                  </div>
-                </div>
-              )
-            })()}
-            <button
-              onClick={handleExport}
-              disabled={exporting}
-              className="bg-[#E8FF47] text-black text-sm font-bold px-4 py-2.5 rounded-lg disabled:opacity-50 hover:bg-[#d4e840] transition-colors"
-            >
-              {exporting ? 'Génération…' : 'Télécharger PNG'}
-            </button>
           </div>
-        </div>
-      )}
+        )}
+
+      </div>
 
       {/* div off-screen pour html2canvas */}
       <div style={{ position: 'fixed', top: -9999, left: -9999, pointerEvents: 'none', zIndex: -1 }} aria-hidden="true">
