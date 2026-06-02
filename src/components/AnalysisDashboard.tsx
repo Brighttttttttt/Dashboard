@@ -486,7 +486,8 @@ function AnalysisResult({ analysis, hrZoneConfig, onSaveHrZoneConfig, onReset }:
               onClick={onReset}
               className="text-[#4B5563] hover:text-white text-sm transition-colors whitespace-nowrap"
             >
-              ← Nouvelle séance
+              <span className="hidden sm:inline">← Nouvelle séance</span>
+              <span className="sm:hidden">←</span>
             </button>
           </div>
         </div>
