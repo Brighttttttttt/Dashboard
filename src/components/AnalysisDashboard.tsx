@@ -610,7 +610,7 @@ function AnalysisResult({ analysis, hrZoneConfig, onSaveHrZoneConfig, onReset }:
         {/* ── Graphique ── */}
         {activeTab === 'graphique' && (
           <div className="bg-[#161616] border border-[#262626] rounded-xl p-4">
-            <h3 className="text-[#6B7280] text-sm uppercase tracking-wider mb-4">Vitesse par lap</h3>
+            <h3 className="text-[#6B7280] text-sm uppercase tracking-wider mb-4">Allure & FC</h3>
             <LapChart laps={analysis.laps} avgEffortPaceSeconds={analysis.avgEffortPaceSeconds} />
           </div>
         )}
