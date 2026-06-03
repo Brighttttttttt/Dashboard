@@ -98,6 +98,7 @@ export default function LapChart({ laps, avgEffortPaceSeconds }: Props) {
               tick={{ fill: '#6B7280', fontSize: 11 }}
               axisLine={{ stroke: '#333' }}
               tickLine={false}
+              minTickGap={20}
             />
             <YAxis
               yAxisId="speed"
@@ -107,7 +108,6 @@ export default function LapChart({ laps, avgEffortPaceSeconds }: Props) {
               axisLine={false}
               tickLine={false}
               width={40}
-              label={{ value: 'min/km', angle: -90, position: 'insideLeft', fill: '#4B5563', fontSize: 10, dx: 8, dy: 30 }}
             />
             {hasHR && (
               <YAxis
@@ -117,8 +117,7 @@ export default function LapChart({ laps, avgEffortPaceSeconds }: Props) {
                 tick={{ fill: '#F87171', fontSize: 11 }}
                 axisLine={false}
                 tickLine={false}
-                width={40}
-                label={{ value: 'bpm', angle: 90, position: 'insideRight', fill: '#F87171', fontSize: 10, dx: -8, dy: -20 }}
+                width={36}
               />
             )}
             <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
@@ -129,6 +128,7 @@ export default function LapChart({ laps, avgEffortPaceSeconds }: Props) {
                 stroke="#E8FF47"
                 strokeDasharray="4 4"
                 strokeOpacity={0.6}
+                label={{ value: speedToPace(avgEffortSpeed), position: 'insideTopLeft', fill: '#E8FF47', fontSize: 10, opacity: 0.9 }}
               />
             )}
             {hasHR && avgHR && (
@@ -138,6 +138,7 @@ export default function LapChart({ laps, avgEffortPaceSeconds }: Props) {
                 stroke="#F87171"
                 strokeDasharray="4 4"
                 strokeOpacity={0.45}
+                label={{ value: `${avgHR}`, position: 'insideTopRight', fill: '#F87171', fontSize: 10, opacity: 0.8 }}
               />
             )}
             <Bar yAxisId="speed" dataKey="speed" radius={[3, 3, 0, 0]} maxBarSize={32}>
@@ -195,7 +196,7 @@ export default function LapChart({ laps, avgEffortPaceSeconds }: Props) {
             <svg width="18" height="8" aria-hidden="true" className="shrink-0">
               <line x1="0" y1="4" x2="18" y2="4" stroke="#F87171" strokeWidth="1.5" strokeDasharray="3 2" opacity="0.5"/>
             </svg>
-            FC moy. ({avgHR} bpm)
+            FC moy.
           </span>
         )}
       </div>
