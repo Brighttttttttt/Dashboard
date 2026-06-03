@@ -20,8 +20,6 @@ const TYPE_COLOR: Record<string, string> = {
   easy: '#6B7280',
 }
 
-// Vert (#22C55E) → Rouge (#EF4444) selon l'écart relatif à l'allure moyenne d'effort
-// Seuil max : 8 % d'écart = rouge complet
 function effortColor(lapSpeed: number, avgEffortSpeed: number): string {
   if (avgEffortSpeed <= 0) return '#22C55E'
   const t = Math.min(Math.abs(lapSpeed - avgEffortSpeed) / avgEffortSpeed / 0.08, 1)
@@ -29,6 +27,14 @@ function effortColor(lapSpeed: number, avgEffortSpeed: number): string {
   const g = Math.round(197 - t * 129)
   const b = Math.round(94 - t * 26)
   return `rgb(${r},${g},${b})`
+}
+
+function speedToPace(kmh: number): string {
+  if (kmh <= 0) return ''
+  const totalSec = 3600 / kmh
+  const m = Math.floor(totalSec / 60)
+  const s = Math.round(totalSec % 60)
+  return `${m}:${s.toString().padStart(2, '0')}`
 }
 
 interface Props {
@@ -85,10 +91,10 @@ export default function LapChart({ laps, avgEffortPaceSeconds }: Props) {
     <div className="w-full">
       <div className="w-full h-64">
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={data} margin={{ top: 8, right: hasHR ? 40 : 8, left: 8, bottom: 0 }}>
+          <ComposedChart data={data} margin={{ top: 8, right: hasHR ? 48 : 8, left: 8, bottom: 0 }}>
             <XAxis
               dataKey="index"
-              tickFormatter={(v) => `L${v + 1}`}
+              tickFormatter={(v) => `${v + 1}`}
               tick={{ fill: '#6B7280', fontSize: 11 }}
               axisLine={{ stroke: '#333' }}
               tickLine={false}
@@ -96,10 +102,12 @@ export default function LapChart({ laps, avgEffortPaceSeconds }: Props) {
             <YAxis
               yAxisId="speed"
               domain={[0, 'auto']}
+              tickFormatter={speedToPace}
               tick={{ fill: '#6B7280', fontSize: 11 }}
               axisLine={false}
               tickLine={false}
-              width={32}
+              width={40}
+              label={{ value: 'min/km', angle: -90, position: 'insideLeft', fill: '#4B5563', fontSize: 10, dx: 8, dy: 30 }}
             />
             {hasHR && (
               <YAxis
@@ -109,7 +117,8 @@ export default function LapChart({ laps, avgEffortPaceSeconds }: Props) {
                 tick={{ fill: '#F87171', fontSize: 11 }}
                 axisLine={false}
                 tickLine={false}
-                width={36}
+                width={40}
+                label={{ value: 'bpm', angle: 90, position: 'insideRight', fill: '#F87171', fontSize: 10, dx: -8, dy: -20 }}
               />
             )}
             <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
@@ -162,16 +171,8 @@ export default function LapChart({ laps, avgEffortPaceSeconds }: Props) {
       {/* Légende */}
       <div className="flex flex-wrap gap-x-5 gap-y-1.5 mt-3 px-1 text-xs text-[#6B7280]">
         <span className="flex items-center gap-1.5">
-          <span className="inline-block w-3 h-2.5 rounded-sm shrink-0" style={{ background: 'linear-gradient(to right, #22C55E, #EF4444)' }} />
-          Effort
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="inline-block w-3 h-2.5 rounded-sm bg-[#60A5FA] shrink-0" />
-          Récup
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="inline-block w-3 h-2.5 rounded-sm bg-[#4B5563] shrink-0" />
-          Facile
+          <span className="inline-block w-3 h-2.5 rounded-sm shrink-0 bg-[#4B5563]" />
+          Allure
         </span>
         {avgEffortSpeed && (
           <span className="flex items-center gap-1.5">
