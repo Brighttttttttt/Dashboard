@@ -448,68 +448,71 @@ function AnalysisResult({ analysis, hrZoneConfig, onSaveHrZoneConfig, onReset }:
 
   return (
     <>
-      {/* ── Sticky session header ── */}
-      <div className="sticky top-[61px] z-20 bg-[#0C0C0C]/95 backdrop-blur-sm border-b border-[#1A1A1A]">
-        <div className="max-w-5xl mx-auto px-6 py-3 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3 min-w-0">
-            {analysis.workoutType === 'intervals' && (
-              <span className="shrink-0 bg-[#E8FF47]/10 border border-[#E8FF47]/20 rounded-full px-2.5 py-0.5 text-[#E8FF47] text-xs font-medium uppercase tracking-wider">
-                Intervalles
+      {/* ── Sticky header + tab bar (conteneur unique) ── */}
+      <div className="sticky top-[61px] z-20">
+        {/* Session header */}
+        <div className="bg-[#0C0C0C]/95 backdrop-blur-sm border-b border-[#1A1A1A]">
+          <div className="max-w-5xl mx-auto px-6 py-3 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3 min-w-0">
+              {analysis.workoutType === 'intervals' && (
+                <span className="shrink-0 bg-[#E8FF47]/10 border border-[#E8FF47]/20 rounded-full px-2.5 py-0.5 text-[#E8FF47] text-xs font-medium uppercase tracking-wider">
+                  Intervalles
+                </span>
+              )}
+              <span className="text-white font-bold truncate">
+                {analysis.structure || 'Séance de course'}
               </span>
-            )}
-            <span className="text-white font-bold truncate">
-              {analysis.structure || 'Séance de course'}
-            </span>
-          </div>
-          <div className="flex items-center gap-1 shrink-0">
-            <button
-              onClick={() => setShowModal(true)}
-              title="Exporter"
-              className="w-8 h-8 flex items-center justify-center rounded-lg text-[#6B7280] hover:text-[#E8FF47] hover:bg-[#E8FF47]/10 transition-colors"
-            >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
-                <polyline points="16 6 12 2 8 6"/>
-                <line x1="12" y1="2" x2="12" y2="15"/>
-              </svg>
-            </button>
-            <button
-              onClick={onReset}
-              title="Nouvelle séance"
-              className="w-8 h-8 flex items-center justify-center rounded-lg text-[#6B7280] hover:text-white hover:bg-[#1A1A1A] transition-colors"
-            >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-                <path d="M3 3v5h5"/>
-              </svg>
-            </button>
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                onClick={() => setShowModal(true)}
+                title="Exporter"
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-[#6B7280] hover:text-[#E8FF47] hover:bg-[#E8FF47]/10 transition-colors"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+                  <polyline points="16 6 12 2 8 6"/>
+                  <line x1="12" y1="2" x2="12" y2="15"/>
+                </svg>
+              </button>
+              <button
+                onClick={onReset}
+                title="Nouvelle séance"
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-[#6B7280] hover:text-white hover:bg-[#1A1A1A] transition-colors"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                  <path d="M3 3v5h5"/>
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* ── Tab bar ── */}
-      <div className="sticky top-[110px] z-10 bg-[#0C0C0C]/90 backdrop-blur-sm border-b border-[#1A1A1A]">
-        <div className="max-w-5xl mx-auto px-6">
-          <div className="flex overflow-x-auto">
-            {([
-              { id: 'resume', label: 'Résumé' },
-              { id: 'analyse', label: 'Analyse' },
-              { id: 'graphique', label: 'Graphique' },
-              { id: 'laps', label: `Laps · ${analysis.laps.length}` },
-              { id: 'parametres', label: 'Paramètres' },
-            ] as const).map(({ id, label }) => (
-              <button
-                key={id}
-                onClick={() => setActiveTab(id)}
-                className={`text-xs px-4 py-3 border-b-2 transition-colors whitespace-nowrap ${
-                  activeTab === id
-                    ? 'text-[#E8FF47] border-[#E8FF47]'
-                    : 'text-[#6B7280] border-transparent hover:text-white'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
+        {/* Tab bar */}
+        <div className="bg-[#0C0C0C]/90 backdrop-blur-sm border-b border-[#1A1A1A]">
+          <div className="max-w-5xl mx-auto px-6">
+            <div className="flex overflow-x-auto">
+              {([
+                { id: 'resume', label: 'Résumé' },
+                { id: 'analyse', label: 'Analyse' },
+                { id: 'graphique', label: 'Graphique' },
+                { id: 'laps', label: `Laps · ${analysis.laps.length}` },
+                { id: 'parametres', label: 'Paramètres' },
+              ] as const).map(({ id, label }) => (
+                <button
+                  key={id}
+                  onClick={() => setActiveTab(id)}
+                  className={`text-xs px-4 py-3 border-b-2 transition-colors whitespace-nowrap ${
+                    activeTab === id
+                      ? 'text-[#E8FF47] border-[#E8FF47]'
+                      : 'text-[#6B7280] border-transparent hover:text-white'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
