@@ -39,18 +39,22 @@ export async function POST(req: NextRequest) {
     const analysis = analyzeWorkout(fitData)
 
     if (userId) {
-      await prisma.workout.create({
-        data: {
-          userId,
-          filename: file.name,
-          sport: analysis.sport,
-          structure: analysis.structure,
-          totalDistance: analysis.totalDistance,
-          totalTime: analysis.activeTime,
-          avgHR: analysis.avgHR > 0 ? analysis.avgHR : null,
-          data: analysis as object,
-        },
-      })
+      try {
+        await prisma.workout.create({
+          data: {
+            userId,
+            filename: file.name,
+            sport: analysis.sport,
+            structure: analysis.structure,
+            totalDistance: analysis.totalDistance,
+            totalTime: analysis.activeTime,
+            avgHR: analysis.avgHR > 0 ? analysis.avgHR : null,
+            data: analysis as object,
+          },
+        })
+      } catch (dbErr) {
+        console.error('DB save error:', dbErr)
+      }
     }
 
     return NextResponse.json(analysis)
