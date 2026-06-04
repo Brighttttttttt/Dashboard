@@ -1,0 +1,23 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Workout {
+  id            String   @id @default(cuid())
+  userId        String
+  filename      String?
+  analyzedAt    DateTime @default(now())
+  sport         String?
+  structure     String?
+  totalDistance Float?
+  totalTime     Float?
+  avgHR         Int?
+  data          Json
+
+  @@index([userId])
+}
