@@ -35,3 +35,8 @@ samples/
 *.log
 
 /src/generated/prisma
+
+# Fichiers locaux
+.mcp.json
+IDEAS.md
+tsconfig.tsbuildinfo
