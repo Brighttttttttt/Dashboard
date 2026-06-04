@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@clerk/nextjs/server'
 import FitParser from 'fit-file-parser'
 import { analyzeWorkout } from '@/lib/workoutAnalyzer'
+import { prisma } from '@/lib/prisma'
 
 export async function POST(req: NextRequest) {
   try {
+    const { userId } = await auth()
+
     const formData = await req.formData()
     const file = formData.get('file') as File | null
 
@@ -33,6 +37,22 @@ export async function POST(req: NextRequest) {
     })
 
     const analysis = analyzeWorkout(fitData)
+
+    if (userId) {
+      await prisma.workout.create({
+        data: {
+          userId,
+          filename: file.name,
+          sport: analysis.sport,
+          structure: analysis.structure,
+          totalDistance: analysis.totalDistance,
+          totalTime: analysis.activeTime,
+          avgHR: analysis.avgHR > 0 ? analysis.avgHR : null,
+          data: analysis as object,
+        },
+      })
+    }
+
     return NextResponse.json(analysis)
   } catch (err) {
     console.error('FIT parse error:', err)
