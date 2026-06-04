@@ -11,6 +11,8 @@
     "lint": "eslint src --ext .ts,.tsx"
   },
   "dependencies": {
+    "@clerk/localizations": "^4.7.1",
+    "@clerk/nextjs": "^7.4.3",
     "fit-file-parser": "^3.0.1",
     "html2canvas": "^1.4.1",
     "leaflet": "^1.9.4",
