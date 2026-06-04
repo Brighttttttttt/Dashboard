@@ -33,3 +33,5 @@ samples/
 
 # Debug scripts output
 *.log
+
+/src/generated/prisma
