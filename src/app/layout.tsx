@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
+import { ClerkProvider } from '@clerk/nextjs'
+import { frFR } from '@clerk/localizations'
 import './globals.css'
 import 'leaflet/dist/leaflet.css'
 
@@ -12,8 +14,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr">
-      <body className={inter.className}>{children}</body>
-    </html>
+    <ClerkProvider localization={frFR}>
+      <html lang="fr">
+        <body className={inter.className}>{children}</body>
+      </html>
+    </ClerkProvider>
   )
 }

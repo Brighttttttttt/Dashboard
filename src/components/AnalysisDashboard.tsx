@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback, useRef } from 'react'
 import dynamic from 'next/dynamic'
+import { UserButton } from '@clerk/nextjs'
 import { formatPace, getHRZone } from '@/lib/workoutAnalyzer'
 import type { WorkoutAnalysis, LapData, HRZoneConfig, HRZoneMethod } from '@/lib/workoutAnalyzer'
 import type { ShareFormat } from './ShareCard'
@@ -784,6 +785,9 @@ export default function AnalysisDashboard() {
         <span className="text-white font-semibold text-sm">Bright Dashboard</span>
         <span className="text-[#333] mx-2">|</span>
         <span className="text-[#4B5563] text-sm">Running</span>
+        <div className="ml-auto">
+          <UserButton />
+        </div>
       </nav>
 
       {!analysis ? (
