@@ -2,6 +2,7 @@ import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
+import ProgressionSection from '@/components/ProgressionSection'
 
 function formatDate(date: Date) {
   return new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }).format(date)
@@ -30,12 +31,14 @@ export default async function MesSeancesPage() {
     select: {
       id: true,
       filename: true,
+      workoutDate: true,
       analyzedAt: true,
       sport: true,
       structure: true,
       totalDistance: true,
       totalTime: true,
       avgHR: true,
+      data: true,
     },
   })
 
@@ -54,8 +57,16 @@ export default async function MesSeancesPage() {
       </nav>
 
       <main className="max-w-5xl mx-auto px-6 py-8">
+        <ProgressionSection workouts={workouts.map(w => ({
+          workoutDate: w.workoutDate?.toISOString() ?? null,
+          analyzedAt: w.analyzedAt.toISOString(),
+          structure: w.structure,
+          avgEffortPaceSeconds: (w.data as { avgEffortPaceSeconds?: number })?.avgEffortPaceSeconds ?? 0,
+          avgHR: w.avgHR,
+        }))} />
+
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-white">Mes séances</h1>
+          <h2 className="text-2xl font-bold text-white">Mes séances</h2>
           <Link
             href="/"
             className="text-sm text-[#6B7280] hover:text-white transition-colors"
@@ -81,7 +92,7 @@ export default async function MesSeancesPage() {
               >
                 {/* Date */}
                 <div className="w-24 shrink-0">
-                  <p className="text-[#6B7280] text-xs">{formatDate(w.analyzedAt)}</p>
+                  <p className="text-[#6B7280] text-xs">{formatDate(w.workoutDate ?? w.analyzedAt)}</p>
                 </div>
 
                 {/* Structure */}
