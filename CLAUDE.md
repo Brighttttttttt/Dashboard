@@ -13,24 +13,40 @@ npm run dev   # http://localhost:3000
 
 - Next.js 16 (App Router) + TypeScript + Tailwind CSS + Recharts
 - `fit-file-parser` pour lire les fichiers FIT côté serveur (standard ANT+)
+- **Clerk** — authentification (comptes, sessions, pages sign-in/sign-up)
+- **Supabase** — base de données PostgreSQL hébergée
+- **Prisma v7** — ORM TypeScript, driver adapter `@prisma/adapter-pg`
+- Déployé sur **Vercel** (auto-deploy depuis `main`)
 
 ## Architecture
 
 ```
 src/
   app/
-    page.tsx                 → render AnalysisDashboard
-    api/analyze/route.ts     → POST: parse FIT + analyzeWorkout()
+    page.tsx                          → render AnalysisDashboard
+    layout.tsx                        → ClerkProvider (auth) + fonts
+    sign-in/[[...sign-in]]/page.tsx   → Page connexion Clerk
+    sign-up/[[...sign-up]]/page.tsx   → Page inscription Clerk
+    api/analyze/route.ts              → POST: parse FIT + analyzeWorkout() + save DB
+  middleware.ts                       → Protection des routes (Clerk)
   lib/
-    workoutAnalyzer.ts       → Moteur de détection des intervalles
-    workoutAnalyzer.test.ts  → Tests unitaires Vitest (48 tests)
+    workoutAnalyzer.ts                → Moteur de détection des intervalles
+    workoutAnalyzer.test.ts           → Tests unitaires Vitest (48 tests)
     workoutAnalyzer.regression.test.ts → Test de régression (fixture JSON)
-    __fixtures__/            → Fixtures JSON pour les tests (pas de fichiers FIT)
+    prisma.ts                         → Singleton PrismaClient (serverless-safe)
+    __fixtures__/                     → Fixtures JSON pour les tests
   components/
-    AnalysisDashboard.tsx    → Upload + affichage résultats (client)
-    LapChart.tsx             → Bar chart Recharts (client)
+    AnalysisDashboard.tsx             → Upload + affichage résultats (client)
+    LapChart.tsx                      → Bar chart Recharts (client)
+    MapView.tsx                       → Carte Leaflet (client)
+    ShareCard.tsx                     → Carte exportable (client)
+  generated/prisma/                   → Client Prisma généré (gitignore, généré au build)
   types/
-    fit-file-parser.d.ts     → Déclarations TypeScript
+    fit-file-parser.d.ts              → Déclarations TypeScript
+prisma/
+  schema.prisma                       → Schéma DB (modèle Workout)
+  migrations/                         → Historique des migrations SQL
+prisma.config.ts                      → Config Prisma (DATABASE_URL via dotenv)
 ```
 
 ## Algorithme d'analyse (workoutAnalyzer.ts)
@@ -108,8 +124,39 @@ Pousser un commit supplémentaire sur une PR ouverte peut déclencher le merge a
 - Merge automatique en rebase dès que les conditions sont remplies
 - Branche supprimée automatiquement après merge
 
+## Base de données (Supabase + Prisma)
+
+### Modèle Workout
+| Champ | Type | Description |
+|-------|------|-------------|
+| `id` | String (cuid) | Clé primaire |
+| `userId` | String | ID Clerk de l'utilisateur |
+| `filename` | String? | Nom du fichier FIT uploadé |
+| `analyzedAt` | DateTime | Date d'analyse |
+| `sport` | String? | Type de sport |
+| `structure` | String? | Ex : "7×1km" |
+| `totalDistance` | Float? | Distance totale en km |
+| `totalTime` | Float? | Temps actif en secondes |
+| `avgHR` | Int? | FC moyenne |
+| `data` | Json | Analyse complète (tous les laps, sets, GPS...) |
+
+### Variables d'environnement requises
+- `.env` (local, gitignore) → `DATABASE_URL` = URL directe Supabase port 5432 (pour Prisma CLI)
+- `.env.local` (local, gitignore) → clés Clerk
+- Vercel → `DATABASE_URL` = URL pooler Supabase port 6543 (Transaction mode, pour serverless)
+- Vercel → `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` + `CLERK_SECRET_KEY`
+
+### Commandes Prisma utiles
+```bash
+npx prisma generate          # Regénérer le client (après modif schema)
+npx prisma migrate dev       # Créer + appliquer une migration en local
+npx prisma studio            # Interface visuelle de la DB
+```
+
 ## Fichiers importants
 
 - `samples/` → fichiers FIT de test, non commités (dans .gitignore) — données personnelles GPS
 - `src/lib/__fixtures__/` → fixtures JSON synthétiques pour les tests, commités dans le repo
 - `CHANGELOG.md` → à mettre à jour à chaque version
+- `.env` → DATABASE_URL pour Prisma CLI (gitignore)
+- `.env.local` → clés Clerk (gitignore)
