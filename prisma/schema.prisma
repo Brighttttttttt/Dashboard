@@ -11,6 +11,7 @@ model Workout {
   id            String   @id @default(cuid())
   userId        String
   filename      String?
+  fileHash      String?
   analyzedAt    DateTime @default(now())
   sport         String?
   structure     String?
@@ -20,4 +21,5 @@ model Workout {
   data          Json
 
   @@index([userId])
+  @@unique([userId, fileHash])
 }

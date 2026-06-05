@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
+import { createHash } from 'crypto'
 import FitParser from 'fit-file-parser'
 import { analyzeWorkout } from '@/lib/workoutAnalyzer'
 import { prisma } from '@/lib/prisma'
@@ -20,6 +21,7 @@ export async function POST(req: NextRequest) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer())
+    const fileHash = createHash('sha256').update(buffer).digest('hex')
 
     const fitData = await new Promise<unknown>((resolve, reject) => {
       const parser = new FitParser({
@@ -44,6 +46,7 @@ export async function POST(req: NextRequest) {
           data: {
             userId,
             filename: file.name,
+            fileHash,
             sport: analysis.sport,
             structure: analysis.structure,
             totalDistance: analysis.totalDistance,
@@ -52,8 +55,10 @@ export async function POST(req: NextRequest) {
             data: analysis as object,
           },
         })
-      } catch (dbErr) {
-        console.error('DB save error:', dbErr)
+      } catch (dbErr: unknown) {
+        // Doublon (même fichier déjà uploadé) → on ignore silencieusement
+        const isUniqueViolation = dbErr instanceof Error && dbErr.message.includes('Unique constraint')
+        if (!isUniqueViolation) console.error('DB save error:', dbErr)
       }
     }
 
