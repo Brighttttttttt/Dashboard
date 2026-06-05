@@ -23,30 +23,35 @@ npm run dev   # http://localhost:3000
 ```
 src/
   app/
-    page.tsx                          → render AnalysisDashboard
-    layout.tsx                        → ClerkProvider (auth) + fonts
-    sign-in/[[...sign-in]]/page.tsx   → Page connexion Clerk
-    sign-up/[[...sign-up]]/page.tsx   → Page inscription Clerk
-    api/analyze/route.ts              → POST: parse FIT + analyzeWorkout() + save DB
-  middleware.ts                       → Protection des routes (Clerk)
+    page.tsx                            → Dashboard principal (upload + analyse)
+    layout.tsx                          → ClerkProvider (auth) + fonts
+    sign-in/[[...sign-in]]/page.tsx     → Page connexion Clerk
+    sign-up/[[...sign-up]]/page.tsx     → Page inscription Clerk
+    mes-seances/
+      page.tsx                          → Historique des séances + graphique progression
+      [id]/page.tsx                     → Détail d'une séance (relecture)
+    api/analyze/route.ts                → POST: parse FIT + analyzeWorkout() + save DB
+  middleware.ts                         → Protection des routes (Clerk)
   lib/
-    workoutAnalyzer.ts                → Moteur de détection des intervalles
-    workoutAnalyzer.test.ts           → Tests unitaires Vitest (48 tests)
-    workoutAnalyzer.regression.test.ts → Test de régression (fixture JSON)
-    prisma.ts                         → Singleton PrismaClient (serverless-safe)
-    __fixtures__/                     → Fixtures JSON pour les tests
+    workoutAnalyzer.ts                  → Moteur de détection des intervalles
+    workoutAnalyzer.test.ts             → Tests unitaires Vitest
+    workoutAnalyzer.regression.test.ts  → Test de régression (fixture JSON)
+    prisma.ts                           → Singleton PrismaClient (serverless-safe)
+    __fixtures__/                       → Fixtures JSON pour les tests
   components/
-    AnalysisDashboard.tsx             → Upload + affichage résultats (client)
-    LapChart.tsx                      → Bar chart Recharts (client)
-    MapView.tsx                       → Carte Leaflet (client)
-    ShareCard.tsx                     → Carte exportable (client)
-  generated/prisma/                   → Client Prisma généré (gitignore, généré au build)
+    AnalysisDashboard.tsx               → Upload + affichage résultats (client)
+    LapChart.tsx                        → Graphique vitesse par lap (Recharts, client)
+    MapView.tsx                         → Carte Leaflet (client)
+    ShareCard.tsx                       → Carte exportable (client)
+    ProgressionChart.tsx                → Graphique progression allure/FC (Recharts, client)
+    ProgressionSection.tsx              → Wrapper 'use client' pour ProgressionChart
+  generated/prisma/                     → Client Prisma généré (gitignore, généré au build)
   types/
-    fit-file-parser.d.ts              → Déclarations TypeScript
+    fit-file-parser.d.ts                → Déclarations TypeScript
 prisma/
-  schema.prisma                       → Schéma DB (modèle Workout)
-  migrations/                         → Historique des migrations SQL
-prisma.config.ts                      → Config Prisma (DATABASE_URL via dotenv)
+  schema.prisma                         → Schéma DB (modèle Workout)
+  migrations/                           → Historique des migrations SQL
+prisma.config.ts                        → Config Prisma (DATABASE_URL via dotenv)
 ```
 
 ## Algorithme d'analyse (workoutAnalyzer.ts)
@@ -132,7 +137,9 @@ Pousser un commit supplémentaire sur une PR ouverte peut déclencher le merge a
 | `id` | String (cuid) | Clé primaire |
 | `userId` | String | ID Clerk de l'utilisateur |
 | `filename` | String? | Nom du fichier FIT uploadé |
-| `analyzedAt` | DateTime | Date d'analyse |
+| `fileHash` | String? | SHA-256 du fichier (déduplication) |
+| `workoutDate` | DateTime? | Date réelle de la séance (session.start_time FIT) |
+| `analyzedAt` | DateTime | Date d'analyse (upload) |
 | `sport` | String? | Type de sport |
 | `structure` | String? | Ex : "7×1km" |
 | `totalDistance` | Float? | Distance totale en km |
