@@ -30,6 +30,7 @@ export default async function MesSeancesPage() {
     select: {
       id: true,
       filename: true,
+      workoutDate: true,
       analyzedAt: true,
       sport: true,
       structure: true,
@@ -81,7 +82,7 @@ export default async function MesSeancesPage() {
               >
                 {/* Date */}
                 <div className="w-24 shrink-0">
-                  <p className="text-[#6B7280] text-xs">{formatDate(w.analyzedAt)}</p>
+                  <p className="text-[#6B7280] text-xs">{formatDate(w.workoutDate ?? w.analyzedAt)}</p>
                 </div>
 
                 {/* Structure */}

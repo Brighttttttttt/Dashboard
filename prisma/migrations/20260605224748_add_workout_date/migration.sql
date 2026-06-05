@@ -1,0 +1,1 @@
+ALTER TABLE "Workout" ADD COLUMN "workoutDate" TIMESTAMP(3);
