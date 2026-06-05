@@ -39,6 +39,7 @@ export interface WorkoutAnalysis {
   structure: string           // "7×1km"
   summary: string             // "7 reps à 3:26/km · FC 162 bpm · allure régulière"
   sport: string
+  startTime: string           // ISO date de début de séance (depuis le fichier FIT)
   totalDistance: number       // km
   totalDuration: number       // seconds elapsed
   activeTime: number          // seconds timer
@@ -420,6 +421,7 @@ export function analyzeWorkout(fitData: any): WorkoutAnalysis {
     structure,
     summary,
     sport: session.sport ?? 'running',
+    startTime: session.start_time ? new Date(session.start_time).toISOString() : '',
     totalDistance: session.total_distance ?? 0,
     totalDuration: session.total_elapsed_time ?? 0,
     activeTime: session.total_timer_time ?? 0,
@@ -443,6 +445,7 @@ function emptyAnalysis(session: any): WorkoutAnalysis {
     structure: '',
     summary: '',
     sport: session.sport ?? 'running',
+    startTime: session.start_time ? new Date(session.start_time).toISOString() : '',
     totalDistance: session.total_distance ?? 0,
     totalDuration: session.total_elapsed_time ?? 0,
     activeTime: session.total_timer_time ?? 0,
