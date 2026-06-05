@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.0.0] — 2026-06-05
+
+### Phase 1 — Authentification, base de données, historique
+
+#### Ajouté
+- **Authentification Clerk** : inscription/connexion par email, pages sign-in et sign-up, `UserButton` dans la navbar, middleware de protection des routes
+- **Base de données Supabase + Prisma** : persistance des séances analysées par utilisateur (modèle `Workout` : structure, distance, temps, FC, laps complets, GPS, hash de déduplication)
+- **Déduplication par hash SHA-256** : un même fichier ne peut pas être importé deux fois, même renommé
+- **Date réelle de séance** : `workoutDate` extrait de `session.start_time` dans le fichier FIT (au lieu de la date d'upload)
+- **Page "Mes séances"** : historique de toutes les séances enregistrées, triées par date, avec distance, durée et FC moy.
+- **Page détail de séance** : relire n'importe quelle séance passée avec le dashboard complet (graphique, tableau, carte)
+- **Graphique de progression** : `ComposedChart` Recharts dans "Mes séances" — axe Y allure effort inversé (min/km), axe Y droit FC moy. (rouge), ligne de référence allure moyenne, tooltip personnalisé
+
+#### Technique
+- Prisma v7 avec driver adapter `@prisma/adapter-pg` (compatible Vercel serverless)
+- URL de connexion pooler Supabase (port 6543, Transaction mode) pour Vercel
+- `ProgressionSection` en `'use client'` comme wrapper pour `ProgressionChart` (compatibilité Server Components Next.js)
+- `prisma generate` ajouté en CI avant le type check
+
+---
+
 ## [0.3.0] — 2026-06-01
 
 ### Visualisation avancée
