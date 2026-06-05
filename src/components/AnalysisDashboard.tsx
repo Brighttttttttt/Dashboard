@@ -761,8 +761,8 @@ function AnalysisResult({ analysis, hrZoneConfig, onSaveHrZoneConfig, onReset }:
 
 // ─── main ─────────────────────────────────────────────────────────────────────
 
-export default function AnalysisDashboard() {
-  const [analysis, setAnalysis] = useState<WorkoutAnalysis | null>(null)
+export default function AnalysisDashboard({ initialAnalysis }: { initialAnalysis?: WorkoutAnalysis }) {
+  const [analysis, setAnalysis] = useState<WorkoutAnalysis | null>(initialAnalysis ?? null)
   const [hrZoneConfig, setHrZoneConfig] = useState<HRZoneConfig | null>(() => {
     if (typeof window === 'undefined') return null
     try {

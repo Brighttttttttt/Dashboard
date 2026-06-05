@@ -74,9 +74,10 @@ export default async function MesSeancesPage() {
         ) : (
           <div className="space-y-2">
             {workouts.map((w) => (
-              <div
+              <Link
                 key={w.id}
-                className="bg-[#161616] border border-[#262626] rounded-xl px-5 py-4 flex items-center gap-4 hover:border-[#333] transition-colors"
+                href={`/mes-seances/${w.id}`}
+                className="bg-[#161616] border border-[#262626] rounded-xl px-5 py-4 flex items-center gap-4 hover:border-[#E8FF47]/30 hover:bg-[#1A1A1A] transition-colors block"
               >
                 {/* Date */}
                 <div className="w-24 shrink-0">
@@ -110,7 +111,7 @@ export default async function MesSeancesPage() {
                     </div>
                   )}
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         )}
