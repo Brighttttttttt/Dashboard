@@ -12,6 +12,7 @@ model Workout {
   userId        String
   filename      String?
   fileHash      String?
+  workoutDate   DateTime?
   analyzedAt    DateTime @default(now())
   sport         String?
   structure     String?
