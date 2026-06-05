@@ -47,6 +47,7 @@ export async function POST(req: NextRequest) {
             userId,
             filename: file.name,
             fileHash,
+            workoutDate: analysis.startTime ? new Date(analysis.startTime) : null,
             sport: analysis.sport,
             structure: analysis.structure,
             totalDistance: analysis.totalDistance,
