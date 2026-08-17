@@ -11,7 +11,7 @@
     "lint": "eslint src --ext .ts,.tsx"
   },
   "dependencies": {
-    "@clerk/localizations": "^4.14.1",
+    "@clerk/localizations": "^4.15.2",
     "@clerk/nextjs": "^7.7.5",
     "@prisma/adapter-pg": "^7.9.1",
     "@prisma/client": "^7.9.1",
