@@ -20,7 +20,7 @@
     "leaflet": "^1.9.4",
     "next": "^16.4.2",
     "pg": "^8.23.1",
-    "prisma": "^7.10.0",
+    "prisma": "^7.10.1",
     "react": "^19",
     "react-dom": "^19",
     "react-leaflet": "^5.0.0",
