@@ -18,7 +18,7 @@
     "fit-file-parser": "^6.2.3",
     "html2canvas": "^1.4.1",
     "leaflet": "^1.9.4",
-    "next": "^16.4.2",
+    "next": "^16.4.3",
     "pg": "^8.23.1",
     "prisma": "^7.10.1",
     "react": "^19",
