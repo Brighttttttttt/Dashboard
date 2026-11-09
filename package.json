@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@clerk/localizations": "^4.24.6",
-    "@clerk/nextjs": "^7.9.22",
+    "@clerk/nextjs": "^7.9.25",
     "@prisma/adapter-pg": "^7.10.1",
     "@prisma/client": "^7.10.1",
     "fit-file-parser": "^6.2.7",
